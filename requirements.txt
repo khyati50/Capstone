@@ -1,0 +1,35 @@
+# =====================================================================
+# Explainable AI-Based Real-Time Enterprise Windows Threat Detection
+# and Investigation Dashboard
+# Python Dependencies (Phases 4 - 18)
+# =====================================================================
+
+# --- Data Preprocessing & Feature Engineering (Phase 4) ---
+pandas>=2.0.0
+numpy>=1.24.0
+python-evtx>=0.7.4
+tqdm>=4.65.0
+
+# --- Machine Learning & Model Training (Phase 5) ---
+scikit-learn>=1.3.0
+xgboost>=2.0.0
+joblib>=1.3.0
+
+# --- Explainable AI & Interpretability (Phase 9) ---
+shap>=0.42.0
+matplotlib>=3.7.0
+
+# --- AI Prediction Service & API Orchestration (Phase 6 & 14) ---
+fastapi>=0.100.0
+uvicorn[standard]>=0.22.0
+pydantic>=2.0.0
+requests>=2.31.0
+httpx>=0.24.0
+
+# --- Database Integration & Security (Phase 15) ---
+mysql-connector-python>=8.0.33
+python-dotenv>=1.0.0
+
+# --- Testing & Verification (Phase 18) ---
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
