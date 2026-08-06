@@ -2,9 +2,11 @@
 
 Runs AI prediction microservice on port 8000.
 Endpoints:
+  GET  /              - Root welcome message & API directory
+  GET  /health        - Service health & model version check
   POST /predict       - Real-time event prediction & SHAP explanation
   POST /predict/batch - Batch inference
-  GET  /health        - Service health & model version check
+  GET  /docs          - Interactive Swagger UI documentation
 """
 
 from typing import Any, Dict, List
@@ -33,6 +35,18 @@ class EventPredictionRequest(BaseModel):
     privilege_escalation_flag: int = 0
     unusual_process_parent_ratio: float = 0.0
     session_duration: float = 0.0
+
+
+@app.get("/")
+def root_welcome() -> Dict[str, Any]:
+    """Root endpoint welcoming users and providing service endpoints."""
+    return {
+        "message": "Welcome to the Explainable AI Threat Prediction Microservice",
+        "status": "online",
+        "documentation": "/docs",
+        "health_check": "/health",
+        "predict_endpoint": "/predict (POST)",
+    }
 
 
 @app.get("/health")
