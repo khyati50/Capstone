@@ -1,17 +1,22 @@
 # Master Orchestration Script to Launch All 3 Services Concurrently
 Write-Host "=== Starting Explainable AI Threat Detection Platform ===" -ForegroundColor Cyan
 
+$baseDir = Resolve-Path "$PSScriptRoot\.."
+
 # 1. Start Python FastAPI Prediction Service (Port 8000)
 Write-Host "Starting Python FastAPI Prediction Microservice (Port 8000)..." -ForegroundColor Green
-$pythonProc = Start-Process -FilePath "..\.venv\Scripts\python.exe" -ArgumentList "-m uvicorn ai.server:app --host 0.0.0.0 --port 8000" -WorkingDirectory "$PSScriptRoot\.." -PassThru
+$pythonExe = "$baseDir\.venv\Scripts\python.exe"
+$pythonProc = Start-Process -FilePath $pythonExe -ArgumentList "-m uvicorn ai.server:app --host 0.0.0.0 --port 8000" -WorkingDirectory $baseDir -PassThru
 
 # 2. Start Node.js Express Backend API (Port 5000)
 Write-Host "Starting Node.js Express Backend Server (Port 5000)..." -ForegroundColor Green
-$nodeProc = Start-Process -FilePath "node" -ArgumentList "server.js" -WorkingDirectory "$PSScriptRoot\..\backend" -PassThru
+$backendDir = "$baseDir\backend"
+$nodeProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm start" -WorkingDirectory $backendDir -PassThru
 
-# 3. Start Vite React Dashboard (Port 5173)
+# 3. Start Vite React Frontend Dashboard (Port 5173)
 Write-Host "Starting Vite React Frontend Dashboard (Port 5173)..." -ForegroundColor Green
-$viteProc = Start-Process -FilePath "npm" -ArgumentList "run dev" -WorkingDirectory "$PSScriptRoot\..\frontend" -PassThru
+$frontendDir = "$baseDir\frontend"
+$viteProc = Start-Process -FilePath "cmd.exe" -ArgumentList "/c npm run dev" -WorkingDirectory $frontendDir -PassThru
 
 Write-Host "`nAll 3 Services Launched Successfully!" -ForegroundColor Yellow
 Write-Host "  - Python FastAPI Service : http://localhost:8000" -ForegroundColor Gray
