@@ -1,0 +1,13 @@
+repos:
+  - repo: local
+    hooks:
+      - id: python-lint
+        name: Python Lint (flake8)
+        entry: .venv/Scripts/python.exe -m flake8 --max-line-length=120
+        language: system
+        types: [python]
+      - id: python-format-check
+        name: Python Format Check (black --check)
+        entry: .venv/Scripts/python.exe -m black --check --line-length=120
+        language: system
+        types: [python]

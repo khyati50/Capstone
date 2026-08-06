@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Node.js
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Environment Variables
+.env
+backend/.env
+frontend/.env
+
+# Model Artifacts (large binaries)
+ai/models/artifacts/*.pkl
+
+# Dataset (raw heavy log exports)
+dataset/atomic-evtx-extracted/attacks_by_category_atomic_and_tools_removed/
+
+# IDE & OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Temporary scratch logs
+*.log
+scratch/
