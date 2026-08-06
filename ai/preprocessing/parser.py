@@ -34,9 +34,14 @@ def parse_scenario_json(json_path: Path) -> List[Dict[str, Any]]:
                 event_data = item.get("Event", {}).get("EventData", {})
                 system_data = item.get("Event", {}).get("System", {})
 
+                parent_name = json_path.parent.name
+                category_name = json_path.parent.parent.name if parent_name == "json" else parent_name
+                logon_val = str(event_data.get("LogonType", "0"))
+                logon_type = int(logon_val) if logon_val.isdigit() else 0
+
                 record = {
                     "scenario_id": json_path.stem,
-                    "category": json_path.parent.parent.name if json_path.parent.name == "json" else json_path.parent.name,
+                    "category": category_name,
                     "TimeCreated": system_data.get("TimeCreated", {}).get("#attributes", {}).get("SystemTime", ""),
                     "EventID": int(system_data.get("EventID", 0)),
                     "Provider_Name": system_data.get("Provider", {}).get("#attributes", {}).get("Name", ""),
@@ -48,7 +53,7 @@ def parse_scenario_json(json_path: Path) -> List[Dict[str, Any]]:
                     "CommandLine": event_data.get("CommandLine", ""),
                     "SourceIp": event_data.get("IpAddress", event_data.get("SourceIp", "")),
                     "DestinationIp": event_data.get("DestinationIp", ""),
-                    "LogonType": int(event_data.get("LogonType", 0)) if str(event_data.get("LogonType", "0")).isdigit() else 0,
+                    "LogonType": logon_type,
                 }
                 records.append(record)
     except Exception:

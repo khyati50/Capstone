@@ -14,7 +14,8 @@ from typing import Dict, Any, List
 class SecurityIntelligenceLayer:
     """Primary Research Novelty Layer converting SHAP values to SOC Intelligence."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize SecurityIntelligenceLayer instance."""
         pass
 
     def generate_intelligence_package(
@@ -42,7 +43,10 @@ class SecurityIntelligenceLayer:
         for feature, weight in shap_values.items():
             if weight > 0.10:
                 if feature == "failed_login_count_5m":
-                    human_reasons.append(f"High frequency of failed login attempts ({raw_event.get('failed_login_count_5m', 0)}) detected within 5 minutes.")
+                    failed_cnt = raw_event.get('failed_login_count_5m', 0)
+                    human_reasons.append(
+                        f"High frequency of failed login attempts ({failed_cnt}) detected within 5 minutes."
+                    )
                 elif feature == "is_powershell_executed":
                     human_reasons.append("Suspicious PowerShell process launched with script arguments.")
                 elif feature == "privilege_escalation_flag":

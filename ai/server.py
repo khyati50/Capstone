@@ -24,6 +24,7 @@ prediction_service = PredictionService()
 
 
 class EventPredictionRequest(BaseModel):
+    """Pydantic model representing incoming log event features for prediction."""
     scenario_id: str = "default_scen"
     EventID: int = 4624
     failed_login_count_5m: float = 0.0
@@ -35,7 +36,8 @@ class EventPredictionRequest(BaseModel):
 
 
 @app.get("/health")
-def health_check():
+def health_check() -> Dict[str, Any]:
+    """Check prediction microservice health and loaded model status."""
     return {
         "status": "healthy",
         "service": "AI Prediction Engine",
@@ -45,14 +47,16 @@ def health_check():
 
 
 @app.post("/predict")
-def predict_event(request: EventPredictionRequest):
+def predict_event(request: EventPredictionRequest) -> Dict[str, Any]:
+    """Execute model inference and SHAP explainability on a single event."""
     features = request.model_dump()
     result = prediction_service.predict_single(features)
     return result
 
 
 @app.post("/predict/batch")
-def predict_batch(events: List[EventPredictionRequest]):
+def predict_batch(events: List[EventPredictionRequest]) -> Dict[str, Any]:
+    """Execute model inference on a batch of event objects."""
     results = []
     for req in events:
         res = prediction_service.predict_single(req.model_dump())

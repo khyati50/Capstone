@@ -6,7 +6,8 @@ from typing import Dict, Any, List
 class TimelineBuilder:
     """Constructs visual node-graph timeline structures for frontend rendering."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize TimelineBuilder instance."""
         pass
 
     def build_timeline_nodes(self, incident_data: Dict[str, Any]) -> List[Dict[str, Any]]:

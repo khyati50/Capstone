@@ -21,7 +21,7 @@
 
 # --- Data Preprocessing & Feature Engineering (Phase 4) ---
 pandas==2.2.3
-numpy>=1.24.0
+numpy==1.26.4
 python-evtx>=0.7.4
 tqdm>=4.65.0
 

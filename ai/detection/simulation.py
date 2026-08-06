@@ -18,7 +18,8 @@ import time
 class SimulationEngine:
     """Generates synthetic security attack scenarios for testing and demonstration."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize SimulationEngine instance."""
         pass
 
     def generate_scenario_events(self, scenario_type: str) -> List[Dict[str, Any]]:

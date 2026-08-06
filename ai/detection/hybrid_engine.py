@@ -15,7 +15,12 @@ from ai.prediction.service import PredictionService
 class HybridDetectionEngine:
     """Decision Fusion hybrid detection controller."""
 
-    def __init__(self, prediction_service: PredictionService = None):
+    def __init__(self, prediction_service: PredictionService = None) -> None:
+        """Initialize HybridDetectionEngine with prediction service and rule engine.
+
+        Args:
+            prediction_service: Optional PredictionService instance.
+        """
         self.prediction_service = prediction_service or PredictionService()
         self.rule_engine = RuleEngine()
 

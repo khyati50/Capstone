@@ -12,8 +12,16 @@ def test_event_correlator_and_timeline():
     correlator = EventCorrelator()
     builder = TimelineBuilder()
 
-    evt1 = {"severity": "Medium", "confidence": 0.8, "raw_event": {"EventID": 4625, "Computer": "HOST-01", "TargetUserName": "userA"}}
-    evt2 = {"severity": "High", "confidence": 0.9, "raw_event": {"EventID": 4672, "Computer": "HOST-01", "TargetUserName": "userA"}}
+    evt1 = {
+        "severity": "Medium",
+        "confidence": 0.8,
+        "raw_event": {"EventID": 4625, "Computer": "HOST-01", "TargetUserName": "userA"},
+    }
+    evt2 = {
+        "severity": "High",
+        "confidence": 0.9,
+        "raw_event": {"EventID": 4672, "Computer": "HOST-01", "TargetUserName": "userA"},
+    }
 
     res1 = correlator.correlate_event(evt1)
     res2 = correlator.correlate_event(evt2)

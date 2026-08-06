@@ -13,7 +13,8 @@ from typing import Dict, Any, List
 class RuleEngine:
     """Evaluates signature rules against log events."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize RuleEngine instance."""
         pass
 
     def evaluate_rules(self, event: Dict[str, Any]) -> List[Dict[str, Any]]:

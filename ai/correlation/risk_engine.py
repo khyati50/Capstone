@@ -17,7 +17,8 @@ from typing import Dict, Any
 class DynamicRiskEngine:
     """Dynamic Risk Scoring Engine."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize DynamicRiskEngine instance."""
         pass
 
     def calculate_risk_score(

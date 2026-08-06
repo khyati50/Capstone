@@ -17,7 +17,12 @@ from ai.config import ARTIFACTS_DIR, NUMERICAL_FEATURES
 class PredictionService:
     """Singleton-style prediction engine loaded once on backend startup."""
 
-    def __init__(self, artifacts_dir: Path = ARTIFACTS_DIR):
+    def __init__(self, artifacts_dir: Path = ARTIFACTS_DIR) -> None:
+        """Initialize PredictionService and attempt to load model artifacts.
+
+        Args:
+            artifacts_dir: Path to directory containing model pkl and metadata files.
+        """
         self.artifacts_dir = artifacts_dir
         self.model = None
         self.scaler = None

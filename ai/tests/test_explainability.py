@@ -6,7 +6,7 @@ from ai.explainability.security_intel import SecurityIntelligenceLayer
 
 
 def test_shap_explainer_local_attribution():
-    """Test local SHAP attribution weight calculation."""
+    """Test local SHAP attribution weight calculation and defensive fallback handling."""
     explainer = ShapExplainer()
     event = {
         "failed_login_count_5m": 5,
@@ -19,6 +19,15 @@ def test_shap_explainer_local_attribution():
     assert "is_powershell_executed" in weights
     assert "privilege_escalation_flag" in weights
     assert weights["failed_login_count_5m"] > 0.0
+
+    # Verify defensive fallback when an unsupported model object is provided
+    class DummyFaultyModel:
+        pass
+
+    faulty_explainer = ShapExplainer(model_obj=DummyFaultyModel())
+    fallback_weights = faulty_explainer.explain_local_event(event)
+    assert "failed_login_count_5m" in fallback_weights
+    assert fallback_weights["failed_login_count_5m"] > 0.0
 
 
 def test_security_intelligence_layer_generation():

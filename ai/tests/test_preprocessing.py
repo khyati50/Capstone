@@ -69,7 +69,9 @@ def test_scenario_level_split():
             data.append({"scenario_id": f"scenario_{i}", "EventID": 4624})
 
     df = pd.DataFrame(data)
-    train_df, val_df, test_df = scenario_level_split(df, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, random_state=42)
+    train_df, val_df, test_df = scenario_level_split(
+        df, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, random_state=42
+    )
 
     total_scenarios = set(df["scenario_id"].unique())
     train_scenarios = set(train_df["scenario_id"].unique())

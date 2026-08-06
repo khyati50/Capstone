@@ -4,7 +4,8 @@ Correlates isolated log events into multi-stage attack chains using context keys
 - Host Name, Target/Subject User Account, Process ID, Session ID, Timestamp proximity
 
 Example Chain Sequence:
-4625 (Failed Login) -> 4625 (Failed Login) -> 4624 (Successful Login) -> 4672 (Privileges Assigned) -> 4688 (PowerShell Execution)
+4625 (Failed Login) -> 4625 (Failed Login) -> 4624 (Successful Login) ->
+4672 (Privileges Assigned) -> 4688 (PowerShell Execution)
 """
 
 from typing import Dict, Any, List
@@ -14,7 +15,8 @@ import uuid
 class EventCorrelator:
     """Correlates security log events into multi-stage incidents."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize EventCorrelator state dict."""
         self.active_incidents = {}
 
     def correlate_event(self, alert_object: Dict[str, Any]) -> Dict[str, Any]:

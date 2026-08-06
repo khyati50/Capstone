@@ -14,7 +14,8 @@ from typing import Dict, Any, List
 class MitreMapper:
     """Maps events to MITRE ATT&CK Tactics and Techniques."""
 
-    def __init__(self):
+    def __init__(self) -> None:
+        """Initialize MitreMapper with static mapping dictionary."""
         self.mapping_table = {
             4625: {
                 "tactic": "Credential Access",

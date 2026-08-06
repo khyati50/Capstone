@@ -15,7 +15,13 @@ from ai.config import NUMERICAL_FEATURES
 class ShapExplainer:
     """SHAP Feature Attribution Explainer."""
 
-    def __init__(self, model_obj=None, feature_names: List[str] = None):
+    def __init__(self, model_obj: Any = None, feature_names: List[str] = None) -> None:
+        """Initialize ShapExplainer with optional model and feature names.
+
+        Args:
+            model_obj: Machine learning model instance or None.
+            feature_names: List of feature names to explain.
+        """
         self.model = model_obj
         self.feature_names = feature_names or NUMERICAL_FEATURES
         self.explainer = None
