@@ -97,7 +97,8 @@ class MitreMapper:
             })
 
 
-        # Update cumulative active_techniques counter
+        # Update cumulative active_techniques counter and populate default attributes
+        result_techniques = []
         for tech in mapped_now:
             tid = tech["technique_id"]
             if tid not in self.active_techniques:
@@ -105,12 +106,15 @@ class MitreMapper:
                     "tactic": tech["tactic"],
                     "technique_name": tech["technique_name"],
                     "technique_id": tid,
-                    "active_alerts": 0,
+                    "active_alerts": 1,
                     "level": "High"
                 }
-            self.active_techniques[tid]["active_alerts"] += 1
-            if self.active_techniques[tid]["active_alerts"] >= 3:
-                self.active_techniques[tid]["level"] = "Critical"
+            else:
+                self.active_techniques[tid]["active_alerts"] += 1
+                if self.active_techniques[tid]["active_alerts"] >= 3:
+                    self.active_techniques[tid]["level"] = "Critical"
 
-        return list(self.active_techniques.values())
+            result_techniques.append(dict(self.active_techniques[tid]))
+
+        return result_techniques
 
