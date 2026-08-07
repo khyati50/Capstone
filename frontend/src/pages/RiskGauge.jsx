@@ -15,14 +15,14 @@ export default function RiskGauge({ riskData }) {
     }
   }, [riskData]);
 
-  const score = data?.overall_score ?? data?.score ?? 84.5;
-  const level = data?.overall_level ?? data?.level ?? 'CRITICAL';
-  const bd = data?.breakdown || {
-    ai_confidence_weight: 27.6,
-    rule_hits_weight: 20.0,
-    event_severity_weight: 15.0,
-    chain_length_weight: 13.2,
-    scope_weight: 8.7
+  const score = data?.overall_score ?? data?.score ?? data?.risk_score ?? 15.0;
+  const level = data?.overall_level ?? data?.level ?? data?.risk_level ?? 'LOW';
+  const bd = data?.breakdown || data?.risk_breakdown || {
+    ai_confidence_weight: 15.0,
+    rule_hits_weight: 0.0,
+    event_severity_weight: 5.0,
+    chain_length_weight: 0.0,
+    scope_weight: 0.0
   };
 
   return (

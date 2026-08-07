@@ -68,14 +68,23 @@ class RuleEngine:
             })
 
         # Rule 4: New Local Account Created
-        if event_id in [4720, 4732]:
+        if event_id == 4720:
             triggered.append({
                 "rule_id": "RULE_ACCOUNT_CREATION_004",
-                "rule_name": "New Local User or Group Escalation",
+                "rule_name": "New Local User Account Created",
                 "severity": "High",
                 "tactic": "Persistence",
                 "technique_id": "T1136.001",
-                "description": "New local account created or added to privileged local group.",
+                "description": "New local user account created.",
+            })
+        elif event_id == 4732:
+            triggered.append({
+                "rule_id": "RULE_GROUP_MEMBER_ADDED_005",
+                "rule_name": "User Added to Privileged Local Group",
+                "severity": "High",
+                "tactic": "Privilege Escalation",
+                "technique_id": "T1069.001",
+                "description": "User added to local administrators security group.",
             })
 
         return triggered
