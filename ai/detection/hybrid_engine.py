@@ -39,27 +39,51 @@ class HybridDetectionEngine:
         ai_pred = ai_res.get("prediction", 0)
         ai_conf = ai_res.get("confidence", 0.5)
 
+        ai_pred = ai_res.get("prediction", 0)
+        ai_conf = float(ai_res.get("confidence", 0.5))
+
         has_rules = len(triggered_rules) > 0
         has_ai = ai_pred == 1
 
+        # 1. Rule confidence calculation (Item 7)
+        rule_conf = 0.0
+        if has_rules:
+            max_rule_sev = "Medium"
+            for r in triggered_rules:
+                if r.get("severity") == "Critical":
+                    max_rule_sev = "Critical"
+                elif r.get("severity") == "High" and max_rule_sev != "Critical":
+                    max_rule_sev = "High"
+
+            rule_conf = 0.95 if max_rule_sev == "Critical" else (0.85 if max_rule_sev == "High" else 0.70)
+
+        # 2. Event severity factor
+        event_id = int(event.get("EventID", 0))
+        event_sev_factor = 0.90 if event_id in [4672, 4720, 4732, 7045] else (0.75 if event_id in [4625, 4688] else 0.40)
+
+        # 3. Weighted Confidence Fusion
         if has_ai and has_rules:
             alert_source = "AI_AND_RULE_AGREEMENT"
-            severity = "Critical" if ai_conf > 0.8 else "High"
-            final_conf = max(ai_conf, 0.95)
+            fused_conf = (0.45 * ai_conf) + (0.35 * rule_conf) + (0.20 * event_sev_factor)
+            severity = "Critical" if fused_conf > 0.82 else "High"
+            final_conf = max(fused_conf, 0.92)
         elif has_ai and not has_rules:
             alert_source = "AI_ANOMALY_ONLY"
-            severity = "High" if ai_conf > 0.85 else "Medium"
-            final_conf = ai_conf
+            fused_conf = (0.70 * ai_conf) + (0.30 * event_sev_factor)
+            severity = "High" if fused_conf > 0.75 else "Medium"
+            final_conf = fused_conf
         elif not has_ai and has_rules:
             alert_source = "RULE_SIGNATURE_ONLY"
+            fused_conf = (0.65 * rule_conf) + (0.35 * event_sev_factor)
             severity = triggered_rules[0].get("severity", "Medium")
-            final_conf = 0.85
+            final_conf = fused_conf
         else:
             alert_source = "BENIGN"
             severity = "Low"
             final_conf = 0.95
 
         is_alert = (alert_source != "BENIGN")
+
 
         return {
             "is_alert": is_alert,

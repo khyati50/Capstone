@@ -41,9 +41,24 @@ function broadcastTimelineUpdate(timelineData) {
   }
 }
 
+function broadcastMitreUpdate(mitreData) {
+  if (io) {
+    io.emit('mitre_update', mitreData);
+  }
+}
+
+function broadcastResetState() {
+  if (io) {
+    io.emit('reset_state');
+  }
+}
+
 module.exports = {
   initSocket,
   broadcastAlert,
   broadcastRiskUpdate,
-  broadcastTimelineUpdate
+  broadcastTimelineUpdate,
+  broadcastMitreUpdate,
+  broadcastResetState
 };
+

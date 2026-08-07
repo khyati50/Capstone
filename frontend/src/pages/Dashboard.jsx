@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
-export default function Dashboard({ alerts }) {
+export default function Dashboard({ alerts, riskData }) {
   const chartData = [
     { time: '08:00', alerts: 2, risk: 30 },
     { time: '09:00', alerts: 5, risk: 45 },
@@ -18,17 +18,21 @@ export default function Dashboard({ alerts }) {
     { time: '12:00', alerts: 15, risk: 90 },
   ];
 
+  const criticalCount = alerts.filter(a => a.severity === 'Critical').length;
+  const currentRiskScore = riskData?.overall_score ?? riskData?.score ?? 84.5;
+  const currentRiskLevel = riskData?.overall_level ?? riskData?.level ?? 'CRITICAL';
+
   return (
     <div className="space-y-6">
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div className="glass-panel p-5 rounded-xl border border-blue-500/20 bg-blue-950/10">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-gray-400 font-medium">Total Ingested Events</span>
+            <span className="text-xs text-gray-400 font-medium">Total Active Alerts</span>
             <Activity className="w-5 h-5 text-blue-400" />
           </div>
-          <p className="text-2xl font-extrabold text-white mt-2">1,064</p>
-          <span className="text-[11px] text-blue-400 font-mono mt-1 block">● 100% Pipeline Coverage</span>
+          <p className="text-2xl font-extrabold text-white mt-2">{alerts.length}</p>
+          <span className="text-[11px] text-blue-400 font-mono mt-1 block">● Real-Time Socket Stream</span>
         </div>
 
         <div className="glass-panel p-5 rounded-xl border border-red-500/20 bg-red-950/10">
@@ -36,7 +40,7 @@ export default function Dashboard({ alerts }) {
             <span className="text-xs text-gray-400 font-medium">Critical Alerts</span>
             <Flame className="w-5 h-5 text-red-500 animate-pulse" />
           </div>
-          <p className="text-2xl font-extrabold text-white mt-2">4</p>
+          <p className="text-2xl font-extrabold text-white mt-2">{criticalCount}</p>
           <span className="text-[11px] text-red-400 font-mono mt-1 block">Requires Immediate Action</span>
         </div>
 
@@ -45,8 +49,8 @@ export default function Dashboard({ alerts }) {
             <span className="text-xs text-gray-400 font-medium">Dynamic Risk Score</span>
             <TrendingUp className="w-5 h-5 text-amber-400" />
           </div>
-          <p className="text-2xl font-extrabold text-amber-400 mt-2">84.5 / 100</p>
-          <span className="text-[11px] text-amber-400 font-mono mt-1 block">Level: CRITICAL</span>
+          <p className="text-2xl font-extrabold text-amber-400 mt-2">{typeof currentRiskScore === 'number' ? currentRiskScore.toFixed(1) : currentRiskScore} / 100</p>
+          <span className="text-[11px] text-amber-400 font-mono mt-1 block">Level: {currentRiskLevel.toUpperCase()}</span>
         </div>
 
         <div className="glass-panel p-5 rounded-xl border border-emerald-500/20 bg-emerald-950/10">
@@ -58,6 +62,7 @@ export default function Dashboard({ alerts }) {
           <span className="text-[11px] text-emerald-400 font-mono mt-1 block">XGBoost Production v1.0</span>
         </div>
       </div>
+
 
       {/* Chart & Live Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -28,10 +28,10 @@ from ai.models.evaluator import evaluate_model_performance
 
 
 def prepare_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, StandardScaler]:
-    """Extract and scale numerical features for model training.
+    """Extract and scale numerical features for model training using prepared labels.
 
     Args:
-        df: Input DataFrame containing engineered features.
+        df: Input DataFrame containing engineered features and prepared 'label' column.
 
     Returns:
         Tuple of (X_matrix, y_series, scaler).
@@ -42,10 +42,11 @@ def prepare_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, S
     feature_cols = [c for c in NUMERICAL_FEATURES if c in df.columns]
     X = df[feature_cols].fillna(0.0).copy()
 
-    # Ground truth label: if event is privilege escalation, powershell, or failed login burst -> 1 (malicious)
+    # Ground truth label: consume prepared 'label' column generated during preprocessing
     if "label" in df.columns:
-        y = df["label"]
+        y = df["label"].astype(int)
     else:
+        # Preprocessing fallback to ensure y is always present
         y = (
             (df.get("is_powershell_executed", 0) == 1)
             | (df.get("privilege_escalation_flag", 0) == 1)
@@ -56,6 +57,7 @@ def prepare_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, S
     X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
     return X_scaled, y, scaler
+
 
 
 def train_candidate_models(

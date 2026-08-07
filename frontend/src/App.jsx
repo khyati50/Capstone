@@ -8,54 +8,62 @@ import ShapExplainer from './pages/ShapExplainer';
 import RiskGauge from './pages/RiskGauge';
 import MitreMatrix from './pages/MitreMatrix';
 import Simulation from './pages/Simulation';
-import { socket } from './api/client';
+import { socket, apiClient } from './api/client';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedAlert, setSelectedAlert] = useState(null);
-  const [alerts, setAlerts] = useState([
-    {
-      alert_id: 'ALT-1001',
-      severity: 'Critical',
-      status: 'Investigating',
-      threat_type: 'Credential Access / Brute Force Attack',
-      summary: 'High frequency of failed logins (6 attempts in 5m) detected on host CORP-HOST-01 for user administrator.',
-      confidence: 0.94,
-      hostname: 'CORP-HOST-01',
-      username: 'administrator',
-      explanation: 'High frequency of failed authentication attempts detected within 5 minutes.',
-      shap_values: { failed_login_count_5m: 0.42, privilege_escalation_flag: 0.35, is_powershell_executed: 0.15 },
-      recommendations: [
-        '1. Lock user account administrator.',
-        '2. Inspect active IP 192.168.1.105.',
-        '3. Enforce multi-factor authentication reset.'
-      ],
-      timestamp: new Date().toISOString()
-    },
-    {
-      alert_id: 'ALT-1002',
-      severity: 'High',
-      status: 'New',
-      threat_type: 'Suspicious Execution / PowerShell Abuse',
-      summary: 'PowerShell process launched with execution policy bypass parameters on DC-01.',
-      confidence: 0.89,
-      hostname: 'DC-01',
-      username: 'jdoe',
-      explanation: 'Suspicious PowerShell process launched with script arguments.',
-      shap_values: { is_powershell_executed: 0.45, unusual_process_parent_ratio: 0.28 },
-      recommendations: [
-        '1. Terminate PowerShell process ID 4412.',
-        '2. Inspect encoded command payload.'
-      ],
-      timestamp: new Date(Date.now() - 3600000).toISOString()
-    }
-  ]);
+  const [alerts, setAlerts] = useState([]);
+  const [riskData, setRiskData] = useState(null);
+  const [timelineData, setTimelineData] = useState(null);
+  const [mitreData, setMitreData] = useState([]);
 
   useEffect(() => {
+    // Initial fetch from backend REST APIs
+    apiClient.get('/alerts')
+      .then(res => setAlerts(res.data.alerts || []))
+      .catch(err => console.warn('Could not fetch alerts from backend:', err.message));
+
+    apiClient.get('/risk')
+      .then(res => setRiskData(res.data))
+      .catch(err => console.warn('Could not fetch risk from backend:', err.message));
+
+    apiClient.get('/mitre')
+      .then(res => setMitreData(res.data.mapped_techniques || []))
+      .catch(err => console.warn('Could not fetch MITRE from backend:', err.message));
+
+    // Socket.IO Real-time event listeners
     socket.on('new_alert', (newAlert) => {
       setAlerts((prev) => [newAlert, ...prev]);
     });
-    return () => socket.off('new_alert');
+
+    socket.on('risk_update', (newRisk) => {
+      setRiskData(newRisk);
+    });
+
+    socket.on('timeline_update', (newTimeline) => {
+      setTimelineData(newTimeline);
+    });
+
+    socket.on('mitre_update', (newMitre) => {
+      setMitreData(newMitre || []);
+    });
+
+    socket.on('reset_state', () => {
+      setAlerts([]);
+      setRiskData(null);
+      setTimelineData(null);
+      setMitreData([]);
+      setSelectedAlert(null);
+    });
+
+    return () => {
+      socket.off('new_alert');
+      socket.off('risk_update');
+      socket.off('timeline_update');
+      socket.off('mitre_update');
+      socket.off('reset_state');
+    };
   }, []);
 
   const handleSelectAlert = (alert) => {
@@ -69,15 +77,17 @@ export default function App() {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <Header alertCount={alerts.length} />
         <main className="flex-1 overflow-y-auto p-6">
-          {activeTab === 'dashboard' && <Dashboard alerts={alerts} />}
+          {activeTab === 'dashboard' && <Dashboard alerts={alerts} riskData={riskData} />}
           {activeTab === 'alerts' && <AlertCenter alerts={alerts} onSelectAlert={handleSelectAlert} />}
-          {activeTab === 'timeline' && <Timeline />}
+          {activeTab === 'timeline' && <Timeline timelineData={timelineData} />}
           {activeTab === 'shap' && <ShapExplainer selectedAlert={selectedAlert} />}
-          {activeTab === 'risk' && <RiskGauge />}
-          {activeTab === 'mitre' && <MitreMatrix />}
+          {activeTab === 'risk' && <RiskGauge riskData={riskData} />}
+          {activeTab === 'mitre' && <MitreMatrix mitreData={mitreData} />}
           {activeTab === 'simulation' && <Simulation />}
         </main>
       </div>
     </div>
   );
 }
+
+

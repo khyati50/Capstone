@@ -11,12 +11,22 @@ analyst-friendly human-readable security intelligence:
 from typing import Dict, Any, List
 
 
+EXPLANATION_TEMPLATES: Dict[str, str] = {
+    "failed_login_count_5m": "High frequency of failed login attempts ({failed_cnt}) detected within 5 minutes.",
+    "is_powershell_executed": "Suspicious PowerShell, pwsh, or obfuscated script executed with script arguments.",
+    "privilege_escalation_flag": "Sensitive administrator privileges assigned to current user session.",
+    "unusual_process_parent_ratio": "Rare parent-child process execution path detected (ratio: {ratio:.2f}).",
+    "session_duration": "Anomalous user session duration observed ({val:.0f} seconds).",
+    "time_delta_prev_event": "Rapid event execution velocity detected ({val:.1f}s elapsed since prior event).",
+}
+
+
 class SecurityIntelligenceLayer:
     """Primary Research Novelty Layer converting SHAP values to SOC Intelligence."""
 
-    def __init__(self) -> None:
-        """Initialize SecurityIntelligenceLayer instance."""
-        pass
+    def __init__(self, templates: Dict[str, str] = None) -> None:
+        """Initialize SecurityIntelligenceLayer instance with configurable templates."""
+        self.templates = templates or EXPLANATION_TEMPLATES
 
     def generate_intelligence_package(
         self,
@@ -38,26 +48,29 @@ class SecurityIntelligenceLayer:
         user = raw_event.get("TargetUserName", raw_event.get("SubjectUserName", "UnknownUser"))
         host = raw_event.get("Computer", "UnknownHost")
 
-        # 1. Human-Readable Explanation Generator
+        # 1. Template-driven Human-Readable Explanation Generator (Item 5)
         human_reasons = []
         for feature, weight in shap_values.items():
             if weight > 0.10:
-                if feature == "failed_login_count_5m":
-                    failed_cnt = raw_event.get('failed_login_count_5m', 0)
-                    human_reasons.append(
-                        f"High frequency of failed login attempts ({failed_cnt}) detected within 5 minutes."
-                    )
-                elif feature == "is_powershell_executed":
-                    human_reasons.append("Suspicious PowerShell process launched with script arguments.")
-                elif feature == "privilege_escalation_flag":
-                    human_reasons.append("Sensitive administrator privileges assigned to current user session.")
-                elif feature == "unusual_process_parent_ratio":
-                    human_reasons.append("Rare parent-child process execution path detected.")
+                if feature in self.templates:
+                    tpl = self.templates[feature]
+                    if feature == "failed_login_count_5m":
+                        failed_cnt = raw_event.get("failed_login_count_5m", 0)
+                        human_reasons.append(tpl.format(failed_cnt=failed_cnt))
+                    elif feature == "unusual_process_parent_ratio":
+                        ratio = float(raw_event.get("unusual_process_parent_ratio", 0.0))
+                        human_reasons.append(tpl.format(ratio=ratio))
+                    elif feature in ["session_duration", "time_delta_prev_event"]:
+                        val = float(raw_event.get(feature, 0.0))
+                        human_reasons.append(tpl.format(val=val))
+                    else:
+                        human_reasons.append(tpl)
                 else:
                     human_reasons.append(f"Anomalous metric observed for '{feature}' (weight: +{weight:.2f}).")
 
         if not human_reasons:
             human_reasons.append("Behavioral event attributes deviated from baseline historical activity.")
+
 
         # 2. Threat Summary Module
         threat_type = "Potential Security Incident"

@@ -20,7 +20,10 @@ class TimelineBuilder:
             List of visual timeline node objects.
         """
         nodes = []
-        events = incident_data.get("events", [])
+        if isinstance(incident_data, list):
+            events = incident_data
+        else:
+            events = incident_data.get("accumulated_events", incident_data.get("events", []))
 
         for idx, evt in enumerate(events):
             raw = evt.get("raw_event", {})
@@ -28,15 +31,17 @@ class TimelineBuilder:
 
             node_label = f"Event {event_id}"
             if event_id == 4625:
-                node_label = "Failed Login (4625)"
+                node_label = "Failed Login Burst (4625)"
             elif event_id == 4624:
                 node_label = "Successful Login (4624)"
             elif event_id == 4672:
                 node_label = "Admin Privileges Assigned (4672)"
             elif event_id == 4688:
-                node_label = "Process Launched (4688)"
-            elif event_id in [4720, 4732]:
-                node_label = "Account Escalation (4720/4732)"
+                node_label = "Suspicious PowerShell Execution (4688)"
+            elif event_id == 4720:
+                node_label = "New Local Account Created (4720)"
+            elif event_id == 4732:
+                node_label = "Privileged Group Escalation (4732)"
 
             nodes.append({
                 "step": idx + 1,
@@ -52,3 +57,4 @@ class TimelineBuilder:
             })
 
         return nodes
+

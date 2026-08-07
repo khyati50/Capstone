@@ -1,48 +1,39 @@
 const express = require('express');
 const router = express.Router();
 const { sendPredictionRequest } = require('../services/predictionProxy');
-const { broadcastAlert } = require('../services/socketService');
-
-// In-memory store fallback if DB is establishing connection
-const logStore = [];
+const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate } = require('../services/socketService');
+const { saveProcessedPipelineResult, getEvents } = require('../services/dbService');
 
 // POST /api/events - Ingest log event
 router.post('/', async (req, res) => {
-  const event = req.body;
-  const prediction = await sendPredictionRequest(event);
+  try {
+    const event = req.body;
+    const predictionResult = await sendPredictionRequest(event);
+    predictionResult.raw_event = event;
 
-  const logEntry = {
-    id: logStore.length + 1,
-    timestamp: event.TimeCreated || new Date().toISOString(),
-    event_id: event.EventID || 4624,
-    hostname: event.Computer || 'HOST-01',
-    username: event.TargetUserName || 'jdoe',
-    prediction: prediction.prediction,
-    confidence: prediction.confidence,
-    shap_values: prediction.shap_values
-  };
+    const { logEntry, alertEntry } = await saveProcessedPipelineResult(predictionResult);
 
-  logStore.push(logEntry);
+    if (alertEntry) {
+      broadcastAlert(alertEntry);
+      if (predictionResult.risk_score) {
+        broadcastRiskUpdate({ score: predictionResult.risk_score, level: predictionResult.risk_level, breakdown: predictionResult.risk_breakdown });
+      }
+      if (predictionResult.timeline_nodes) {
+        broadcastTimelineUpdate({ incident_id: predictionResult.incident_id, nodes: predictionResult.timeline_nodes });
+      }
+    }
 
-  if (prediction.prediction === 1) {
-    const alertData = {
-      alert_id: `ALT-${Date.now()}`,
-      severity: prediction.confidence > 0.85 ? 'Critical' : 'High',
-      status: 'New',
-      summary: `Malicious behavior detected on ${logEntry.hostname} by user ${logEntry.username}`,
-      confidence: prediction.confidence,
-      shap_values: prediction.shap_values,
-      timestamp: logEntry.timestamp
-    };
-    broadcastAlert(alertData);
+    res.json({ message: 'Event processed successfully', logId: logEntry.id, prediction: predictionResult });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  res.json({ message: 'Event processed successfully', logId: logEntry.id, prediction });
 });
 
 // GET /api/events - Retrieve paginated events
-router.get('/', (req, res) => {
-  res.json({ count: logStore.length, events: logStore.slice(-50) });
+router.get('/', async (req, res) => {
+  const data = await getEvents();
+  res.json(data);
 });
 
 module.exports = router;
+

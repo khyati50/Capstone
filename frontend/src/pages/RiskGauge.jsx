@@ -1,9 +1,29 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Gauge, ShieldAlert, AlertOctagon } from 'lucide-react';
+import { apiClient } from '../api/client';
 
-export default function RiskGauge() {
-  const score = 84.5;
-  const level = 'CRITICAL';
+export default function RiskGauge({ riskData }) {
+  const [data, setData] = useState(riskData);
+
+  useEffect(() => {
+    if (riskData) {
+      setData(riskData);
+    } else {
+      apiClient.get('/risk')
+        .then(res => setData(res.data))
+        .catch(err => console.warn('Risk fetch fallback error:', err.message));
+    }
+  }, [riskData]);
+
+  const score = data?.overall_score ?? data?.score ?? 84.5;
+  const level = data?.overall_level ?? data?.level ?? 'CRITICAL';
+  const bd = data?.breakdown || {
+    ai_confidence_weight: 27.6,
+    rule_hits_weight: 20.0,
+    event_severity_weight: 15.0,
+    chain_length_weight: 13.2,
+    scope_weight: 8.7
+  };
 
   return (
     <div className="space-y-6">
@@ -21,7 +41,7 @@ export default function RiskGauge() {
           <span className="text-xs text-gray-400 font-mono">ENTERPRISE THREAT RATING</span>
           <div className="relative my-6 flex items-center justify-center">
             <div className="w-44 h-44 rounded-full border-8 border-red-500/20 border-t-red-500 border-r-red-500 flex items-center justify-center animate-pulse">
-              <span className="text-4xl font-black text-white">{score}</span>
+              <span className="text-4xl font-black text-white">{typeof score === 'number' ? score.toFixed(1) : score}</span>
             </div>
           </div>
           <span className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 rounded-full text-xs font-bold font-mono uppercase">
@@ -36,41 +56,41 @@ export default function RiskGauge() {
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>AI Confidence Weight (30%)</span>
-                <span className="font-mono text-emerald-400">27.6 / 30.0</span>
+                <span className="font-mono text-emerald-400">{bd.ai_confidence_weight} / 30.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-emerald-400 h-full rounded-full" style={{ width: '92%' }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-emerald-400 h-full rounded-full" style={{ width: `${(bd.ai_confidence_weight / 30.0) * 100}%` }}></div></div>
             </div>
 
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>Triggered Rules Weight (20%)</span>
-                <span className="font-mono text-amber-400">20.0 / 20.0</span>
+                <span className="font-mono text-amber-400">{bd.rule_hits_weight} / 20.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-amber-400 h-full rounded-full" style={{ width: '100%' }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-amber-400 h-full rounded-full" style={{ width: `${(bd.rule_hits_weight / 20.0) * 100}%` }}></div></div>
             </div>
 
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>Event Severity Rating (15%)</span>
-                <span className="font-mono text-red-400">15.0 / 15.0</span>
+                <span className="font-mono text-red-400">{bd.event_severity_weight} / 15.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-red-400 h-full rounded-full" style={{ width: '100%' }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-red-400 h-full rounded-full" style={{ width: `${(bd.event_severity_weight / 15.0) * 100}%` }}></div></div>
             </div>
 
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>Attack Chain Length Progression (20%)</span>
-                <span className="font-mono text-blue-400">13.2 / 20.0</span>
+                <span className="font-mono text-blue-400">{bd.chain_length_weight} / 20.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-blue-400 h-full rounded-full" style={{ width: '66%' }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-blue-400 h-full rounded-full" style={{ width: `${(bd.chain_length_weight / 20.0) * 100}%` }}></div></div>
             </div>
 
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>Impacted Host & User Scope (15%)</span>
-                <span className="font-mono text-purple-400">8.7 / 15.0</span>
+                <span className="font-mono text-purple-400">{bd.scope_weight} / 15.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-purple-400 h-full rounded-full" style={{ width: '58%' }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-purple-400 h-full rounded-full" style={{ width: `${(bd.scope_weight / 15.0) * 100}%` }}></div></div>
             </div>
           </div>
         </div>
@@ -78,3 +98,4 @@ export default function RiskGauge() {
     </div>
   );
 }
+
