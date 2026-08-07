@@ -1,0 +1,13 @@
+[flake8]
+max-line-length = 120
+exclude =
+    .venv,
+    .git,
+    __pycache__,
+    ai/stubs
+ignore =
+    E501,
+    W503,
+    E203
+per-file-ignores =
+    ai/tests/*: S101,ANN

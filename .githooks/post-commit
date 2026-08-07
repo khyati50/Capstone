@@ -1,0 +1,28 @@
+#!/bin/sh
+# ============================================================
+#  post-commit hook — Commit confirmation & summary printer
+#  Prints a summary after every successful commit
+#  Install: git config core.hooksPath .githooks
+# ============================================================
+
+COMMIT_HASH=$(git log --format="%h" -1)
+COMMIT_MSG=$(git log --format="%s" -1)
+COMMIT_AUTHOR=$(git log --format="%an <%ae>" -1)
+COMMIT_DATE=$(git log --format="%ci" -1)
+FILES_CHANGED=$(git show --stat HEAD | tail -1)
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════╗"
+echo "║              ✅ COMMIT SUCCESSFUL                         ║"
+echo "╠══════════════════════════════════════════════════════════╣"
+echo "║ Hash    : $COMMIT_HASH"
+echo "║ Author  : $COMMIT_AUTHOR"
+echo "║ Date    : $COMMIT_DATE"
+echo "║ Summary : $COMMIT_MSG"
+echo "║ Changed : $FILES_CHANGED"
+echo "╚══════════════════════════════════════════════════════════╝"
+echo ""
+echo "  💡 Remember to push: git push origin main"
+echo ""
+
+exit 0

@@ -1,0 +1,62 @@
+#!/bin/sh
+# ============================================================
+#  pre-commit hook — Python code quality gate
+#  Enforced rules: black formatting, flake8 linting, pytest
+#  Install: git config core.hooksPath .githooks
+# ============================================================
+
+echo "🔍 [pre-commit] Running Python code quality checks..."
+
+# ── 1. Check black formatting ───────────────────────────────
+echo "  → Checking black formatting..."
+.venv/Scripts/python.exe -m black --check ai/ --line-length 120 --quiet 2>&1
+BLACK_EXIT=$?
+if [ $BLACK_EXIT -ne 0 ]; then
+  echo ""
+  echo "  ❌ BLACK FORMATTING FAILED"
+  echo "  Run: .venv/Scripts/python.exe -m black ai/ --line-length 120"
+  echo "  Then re-stage and commit."
+  exit 1
+fi
+echo "  ✅ Black: OK"
+
+# ── 2. Check flake8 linting ─────────────────────────────────
+echo "  → Checking flake8 linting..."
+.venv/Scripts/python.exe -m flake8 ai/ --max-line-length=120 --exclude=ai/stubs/,ai/tests/,.venv/ --ignore=E501,W503 2>&1
+FLAKE_EXIT=$?
+if [ $FLAKE_EXIT -ne 0 ]; then
+  echo ""
+  echo "  ❌ FLAKE8 LINTING FAILED"
+  echo "  Fix the issues above, then re-stage and commit."
+  exit 1
+fi
+echo "  ✅ Flake8: OK"
+
+# ── 3. Run pytest ────────────────────────────────────────────
+echo "  → Running pytest ai/tests/..."
+.venv/Scripts/python.exe -m pytest ai/tests/ -q --tb=short 2>&1
+PYTEST_EXIT=$?
+if [ $PYTEST_EXIT -ne 0 ]; then
+  echo ""
+  echo "  ❌ TESTS FAILED — Commit blocked until all tests pass."
+  echo "  Run: .venv/Scripts/python.exe -m pytest ai/tests/ -v"
+  exit 1
+fi
+echo "  ✅ Pytest: All tests passed"
+
+# ── 4. Check for secrets accidentally staged ─────────────────
+echo "  → Scanning for accidentally staged secrets..."
+SECRETS=$(git diff --cached | grep -iE "(password\s*=\s*['\"][^'\"]+['\"]|secret\s*=\s*['\"][^'\"]+['\"]|api_key\s*=\s*['\"][^'\"]+['\"])" 2>/dev/null)
+if [ -n "$SECRETS" ]; then
+  echo ""
+  echo "  ⚠️  WARNING: Possible secret in staged changes:"
+  echo "$SECRETS"
+  echo "  Review the above before committing."
+  echo "  If this is a false positive, use: git commit --no-verify"
+  exit 1
+fi
+echo "  ✅ Secrets scan: Clean"
+
+echo ""
+echo "✅ [pre-commit] All checks passed — proceeding with commit."
+exit 0

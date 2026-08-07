@@ -1,0 +1,96 @@
+#!/bin/sh
+# ============================================================
+#  commit-msg hook — Human-readable commit message enforcer
+#  Enforces Conventional Commits + co-author attribution
+#  Install: git config core.hooksPath .githooks
+# ============================================================
+
+COMMIT_MSG_FILE="$1"
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+echo "🔍 [commit-msg] Validating commit message format..."
+
+# ── 1. Minimum length check ──────────────────────────────────
+MSG_LENGTH=${#COMMIT_MSG}
+if [ $MSG_LENGTH -lt 20 ]; then
+  echo ""
+  echo "  ❌ COMMIT MESSAGE TOO SHORT ($MSG_LENGTH chars)"
+  echo "  Minimum 20 characters required."
+  echo "  Vague messages like 'fix stuff', 'update', 'wip', 'changes' are REJECTED."
+  echo ""
+  echo "  Required format:"
+  echo "    <type>(<scope>): <human-readable summary>"
+  echo ""
+  echo "  Example:"
+  echo "    fix(timeline): Fix stale timeline nodes broadcasting the wrong incident"
+  exit 1
+fi
+
+# ── 2. Conventional Commits format check ─────────────────────
+FIRST_LINE=$(echo "$COMMIT_MSG" | head -1)
+VALID_TYPES="feat|fix|refactor|test|docs|chore|sprint|security|style|perf|ci"
+
+echo "$FIRST_LINE" | grep -qE "^($VALID_TYPES)(\(.+\))?: .{10,}"
+if [ $? -ne 0 ]; then
+  echo ""
+  echo "  ❌ COMMIT FORMAT INVALID"
+  echo ""
+  echo "  First line must match: <type>(<scope>): <summary (min 10 chars)>"
+  echo ""
+  echo "  Valid types: feat, fix, refactor, test, docs, chore, sprint, security"
+  echo ""
+  echo "  ✅ Good examples:"
+  echo "    feat(ai): Add configurable explanation templates to SecurityIntelligenceLayer"
+  echo "    fix(timeline): Fix getTimeline returning stale first incident instead of latest"
+  echo "    test(negative): Add 7 negative test cases for parser, SHAP, and correlator"
+  echo ""
+  echo "  ❌ Rejected examples:"
+  echo "    fix stuff"
+  echo "    update"
+  echo "    changes"
+  echo "    wip"
+  exit 1
+fi
+echo "  ✅ Format: OK"
+
+# ── 3. Reject banned vague messages ──────────────────────────
+echo "$COMMIT_MSG" | grep -qiE "^(fix stuff|update|changes|wip|temp|test commit|asdf|aaa|xxx|minor|misc)"
+if [ $? -eq 0 ]; then
+  echo ""
+  echo "  ❌ VAGUE COMMIT MESSAGE REJECTED"
+  echo "  Write a human-readable description of WHAT changed and WHY."
+  exit 1
+fi
+echo "  ✅ No vague messages: OK"
+
+# ── 4. Co-author attribution check ───────────────────────────
+echo "$COMMIT_MSG" | grep -q "Co-authored-by: Samriddhi0112"
+HAS_SAM=$?
+echo "$COMMIT_MSG" | grep -q "Co-authored-by: deshnaajainofficial"
+HAS_DESH=$?
+
+if [ $HAS_SAM -ne 0 ] || [ $HAS_DESH -ne 0 ]; then
+  echo ""
+  echo "  ❌ MISSING CO-AUTHOR ATTRIBUTION"
+  echo ""
+  echo "  Every commit must include both co-author trailers:"
+  echo "    Co-authored-by: Samriddhi0112 <motianisamriddhi2005@gmail.com>"
+  echo "    Co-authored-by: deshnaajainofficial <deshnaajainofficial@gmail.com>"
+  echo ""
+  echo "  Add them at the end of your commit message body."
+  exit 1
+fi
+echo "  ✅ Co-author attribution: OK"
+
+# ── 5. Summary length check on first line ────────────────────
+FIRST_LINE_LEN=${#FIRST_LINE}
+if [ $FIRST_LINE_LEN -gt 100 ]; then
+  echo ""
+  echo "  ⚠️  First line is $FIRST_LINE_LEN chars (recommended max: 100)"
+  echo "  Consider shortening the summary and moving detail to the body."
+  # Warning only — does not block
+fi
+
+echo ""
+echo "✅ [commit-msg] Commit message validated successfully."
+exit 0

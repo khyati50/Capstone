@@ -1,0 +1,24 @@
+#!/bin/sh
+# ============================================================
+#  prepare-commit-msg hook — Auto-appends co-author trailers
+#  Automatically injects co-author lines so you never forget
+#  Install: git config core.hooksPath .githooks
+# ============================================================
+
+COMMIT_MSG_FILE="$1"
+COMMIT_SOURCE="$2"
+
+# Skip for merge commits, squash commits, and fixups
+if [ "$COMMIT_SOURCE" = "merge" ] || [ "$COMMIT_SOURCE" = "squash" ] || [ "$COMMIT_SOURCE" = "fixup" ]; then
+  exit 0
+fi
+
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+# Only inject if co-author lines are not already present
+if ! echo "$COMMIT_MSG" | grep -q "Co-authored-by: Samriddhi0112"; then
+  # Append co-author trailers
+  printf "\nCo-authored-by: Samriddhi0112 <motianisamriddhi2005@gmail.com>\nCo-authored-by: deshnaajainofficial <deshnaajainofficial@gmail.com>\n" >> "$COMMIT_MSG_FILE"
+fi
+
+exit 0
