@@ -23,7 +23,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import StandardScaler
 from xgboost import XGBClassifier
 
-from ai.config import ARTIFACTS_DIR, NUMERICAL_FEATURES, CATEGORICAL_FEATURES, RANDOM_STATE
+from ai.config import ARTIFACTS_DIR, NUMERICAL_FEATURES, RANDOM_STATE
 from ai.models.evaluator import evaluate_model_performance
 
 
@@ -57,7 +57,6 @@ def prepare_feature_matrix(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.Series, S
     X_scaled = pd.DataFrame(scaler.fit_transform(X), columns=X.columns)
 
     return X_scaled, y, scaler
-
 
 
 def train_candidate_models(

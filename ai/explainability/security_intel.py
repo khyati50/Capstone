@@ -8,8 +8,7 @@ analyst-friendly human-readable security intelligence:
 4. InvestigationRecommendationModule: Actionable SOC playbooks and guidance
 """
 
-from typing import Dict, Any, List
-
+from typing import Dict, Any
 
 EXPLANATION_TEMPLATES: Dict[str, str] = {
     "failed_login_count_5m": "High frequency of failed login attempts ({failed_cnt}) detected within 5 minutes.",
@@ -29,9 +28,7 @@ class SecurityIntelligenceLayer:
         self.templates = templates or EXPLANATION_TEMPLATES
 
     def generate_intelligence_package(
-        self,
-        alert_object: Dict[str, Any],
-        shap_values: Dict[str, float]
+        self, alert_object: Dict[str, Any], shap_values: Dict[str, float]
     ) -> Dict[str, Any]:
         """Generate full human-readable security intelligence report.
 
@@ -70,7 +67,6 @@ class SecurityIntelligenceLayer:
 
         if not human_reasons:
             human_reasons.append("Behavioral event attributes deviated from baseline historical activity.")
-
 
         # 2. Threat Summary Module
         threat_type = "Potential Security Incident"

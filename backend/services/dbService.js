@@ -12,16 +12,20 @@ const memoryStore = {
   alerts: [],
   incidents: {},
   risk: {
-    overall_score: 15.0,
+    overall_score: 0.0,
     overall_level: 'Low',
     active_incidents_count: 0,
     breakdown: {
-      ai_confidence_weight: 15.0,
+      ai_confidence_weight: 0.0,
       rule_hits_weight: 0.0,
-      event_severity_weight: 5.0,
-      chain_length_weight: 0.0,
-      scope_weight: 0.0
-    }
+      mitre_tactic_weight: 0.0,
+      tactic_diversity_weight: 0.0,
+      scope_weight: 0.0,
+      corroboration_multiplier: 1.0,
+      event_severity_weight: 0.0,
+      chain_length_weight: 0.0
+    },
+    sublines: {}
   },
   mitre: []
 };
@@ -31,16 +35,20 @@ function resetState() {
   memoryStore.alerts = [];
   memoryStore.incidents = {};
   memoryStore.risk = {
-    overall_score: 15.0,
+    overall_score: 0.0,
     overall_level: 'Low',
     active_incidents_count: 0,
     breakdown: {
-      ai_confidence_weight: 15.0,
+      ai_confidence_weight: 0.0,
       rule_hits_weight: 0.0,
-      event_severity_weight: 5.0,
-      chain_length_weight: 0.0,
-      scope_weight: 0.0
-    }
+      mitre_tactic_weight: 0.0,
+      tactic_diversity_weight: 0.0,
+      scope_weight: 0.0,
+      corroboration_multiplier: 1.0,
+      event_severity_weight: 0.0,
+      chain_length_weight: 0.0
+    },
+    sublines: {}
   };
   memoryStore.mitre = [];
 }
@@ -99,12 +107,16 @@ async function saveProcessedPipelineResult(pipelineResult) {
     memoryStore.alerts.unshift(alertEntry);
 
     // Update risk metrics
-    memoryStore.risk.overall_score = pipelineResult.risk_score || memoryStore.risk.overall_score;
-    memoryStore.risk.overall_level = pipelineResult.risk_level || memoryStore.risk.overall_level;
+    memoryStore.risk.overall_score = pipelineResult.risk_score ?? memoryStore.risk.overall_score;
+    memoryStore.risk.overall_level = pipelineResult.risk_level ?? memoryStore.risk.overall_level;
     memoryStore.risk.active_incidents_count = Object.keys(memoryStore.incidents).length || 1;
     if (pipelineResult.risk_breakdown) {
       memoryStore.risk.breakdown = pipelineResult.risk_breakdown;
     }
+    if (pipelineResult.risk_sublines) {
+      memoryStore.risk.sublines = pipelineResult.risk_sublines;
+    }
+
 
     // Update incident timeline
     const incId = alertEntry.incident_id;

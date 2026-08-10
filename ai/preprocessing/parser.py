@@ -9,7 +9,7 @@ Parses raw EVTX JSON logs and extracts core security event metadata:
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 import pandas as pd
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -20,7 +20,7 @@ LAST_PARSER_SUMMARY: Dict[str, Any] = {
     "successful_files": 0,
     "failed_files": 0,
     "total_records_parsed": 0,
-    "error_details": []
+    "error_details": [],
 }
 
 
@@ -72,11 +72,15 @@ def parse_scenario_json(json_path: Path) -> List[Dict[str, Any]]:
     except json.JSONDecodeError as exc:
         err_msg = f"Malformed JSON in {json_path.name}: {exc}"
         logger.error(err_msg)
-        LAST_PARSER_SUMMARY["error_details"].append({"file": str(json_path), "error": str(exc), "type": "JSONDecodeError"})
+        LAST_PARSER_SUMMARY["error_details"].append(
+            {"file": str(json_path), "error": str(exc), "type": "JSONDecodeError"}
+        )
     except Exception as exc:
         err_msg = f"Unexpected error parsing {json_path.name}: {exc}"
         logger.error(err_msg)
-        LAST_PARSER_SUMMARY["error_details"].append({"file": str(json_path), "error": str(exc), "type": type(exc).__name__})
+        LAST_PARSER_SUMMARY["error_details"].append(
+            {"file": str(json_path), "error": str(exc), "type": type(exc).__name__}
+        )
 
     return records
 
@@ -96,7 +100,7 @@ def parse_all_scenarios(dataset_root: Path) -> pd.DataFrame:
         "successful_files": 0,
         "failed_files": 0,
         "total_records_parsed": 0,
-        "error_details": []
+        "error_details": [],
     }
 
     all_records = []
@@ -134,4 +138,3 @@ def parse_all_scenarios(dataset_root: Path) -> pd.DataFrame:
 def get_last_parser_summary() -> Dict[str, Any]:
     """Return error statistics and parser summary report dict."""
     return LAST_PARSER_SUMMARY
-

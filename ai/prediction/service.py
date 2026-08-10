@@ -6,12 +6,10 @@ once into memory at startup and provides fast inference.
 
 import json
 import joblib
-from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any
 import pandas as pd
-import numpy as np
 
-from ai.config import ARTIFACTS_DIR, NUMERICAL_FEATURES
+from ai.config import ARTIFACTS_DIR
 
 
 class PredictionService:

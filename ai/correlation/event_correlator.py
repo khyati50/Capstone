@@ -8,7 +8,7 @@ Example Chain Sequence:
 4672 (Privileges Assigned) -> 4688 (PowerShell Execution)
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any
 import uuid
 
 
@@ -50,7 +50,7 @@ class EventCorrelator:
                 "event_ids": [],
                 "unique_hosts": set(),
                 "unique_users": set(),
-                "triggered_rules": []
+                "triggered_rules": [],
             }
 
         incident = self.active_incidents[context_key]
@@ -77,8 +77,5 @@ class EventCorrelator:
             "unique_hosts_count": len(incident["unique_hosts"]),
             "unique_users_count": len(incident["unique_users"]),
             "total_rules": all_rules,
-            "incident_events": incident_events
+            "incident_events": incident_events,
         }
-
-
-

@@ -11,7 +11,7 @@ Endpoints:
 """
 
 from typing import Any, Dict, List
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from pydantic import BaseModel, ConfigDict
 
 from ai.prediction.service import PredictionService
@@ -42,6 +42,7 @@ simulation_engine = SimulationEngine()
 
 class EventPredictionRequest(BaseModel):
     """Pydantic model representing incoming log event features for prediction."""
+
     model_config = ConfigDict(extra="allow")
 
     scenario_id: str = "default_scen"
@@ -56,6 +57,7 @@ class EventPredictionRequest(BaseModel):
 
 class SimulationRequest(BaseModel):
     """Pydantic model representing simulation scenario trigger."""
+
     scenario_type: str = "FAILED_LOGIN_BURST"
 
 
@@ -75,31 +77,26 @@ def process_event_full_pipeline(features: Dict[str, Any]) -> Dict[str, Any]:
     incident_evts = corr_res.get("incident_events", incident_data.get("events", []))
     timeline_nodes = timeline_builder.build_timeline_nodes(incident_evts)
 
+    # 4. MITRE ATT&CK Mapping (Run before risk assessment so techniques feed into risk engine)
+    mitre_res = mitre_mapper.map_event_to_mitre(alert_obj)
 
-
-    # 4. Cumulative Multi-Factor Dynamic Risk Assessment
+    # 5. Cumulative Multi-Factor Dynamic Risk Assessment (Final Spec Formula)
     total_rules = corr_res.get("total_rules", [])
     total_rules_count = len(total_rules)
     unique_hosts_count = corr_res.get("unique_hosts_count", 1)
-
-    max_severity_score = 5.0
-    for evt in incident_data.get("events", []):
-        eid = evt.get("event_id", evt.get("raw_event", {}).get("EventID", 0))
-        if eid in [4672, 4720, 4732, 7045]:
-            max_severity_score = 15.0
-        elif eid in [4625, 4688] and max_severity_score < 10.0:
-            max_severity_score = 10.0
+    unique_users_count = corr_res.get("unique_users_count", 1)
+    event_sequence = corr_res.get("event_sequence", [])
 
     risk_res = risk_engine.calculate_risk_score(
         alert_obj,
         chain_length=corr_res["chain_length"],
         impacted_hosts_count=unique_hosts_count,
+        unique_users_count=unique_users_count,
         total_rules_count=total_rules_count,
-        max_event_severity_score=max_severity_score
+        mitre_techniques=mitre_res,
+        alert_source=alert_obj.get("alert_source", "AI_ANOMALY_ONLY"),
+        event_sequence=event_sequence,
     )
-
-    # 5. MITRE ATT&CK Mapping
-    mitre_res = mitre_mapper.map_event_to_mitre(alert_obj)
 
     return {
         "prediction": 1 if alert_obj["is_alert"] else 0,
@@ -120,9 +117,10 @@ def process_event_full_pipeline(features: Dict[str, Any]) -> Dict[str, Any]:
         "risk_score": risk_res["score"],
         "risk_level": risk_res["level"],
         "risk_breakdown": risk_res["breakdown"],
+        "risk_sublines": risk_res.get("sublines", {}),
         "mitre_mapping": mitre_res,
         "timeline_nodes": timeline_nodes,
-        "raw_event": features
+        "raw_event": features,
     }
 
 
@@ -136,7 +134,7 @@ def root_welcome() -> Dict[str, Any]:
         "health_check": "/health",
         "predict_endpoint": "/predict (POST)",
         "simulate_endpoint": "/simulate (POST)",
-        "reset_endpoint": "/simulate/reset (POST)"
+        "reset_endpoint": "/simulate/reset (POST)",
     }
 
 
@@ -171,11 +169,7 @@ def simulate_scenario(request: SimulationRequest) -> Dict[str, Any]:
     """Generate synthetic attack scenario events and run them through the full pipeline."""
     events = simulation_engine.generate_scenario_events(request.scenario_type)
     results = [process_event_full_pipeline(evt) for evt in events]
-    return {
-        "scenario_type": request.scenario_type,
-        "event_count": len(results),
-        "pipeline_results": results
-    }
+    return {"scenario_type": request.scenario_type, "event_count": len(results), "pipeline_results": results}
 
 
 @app.post("/simulate/reset")
@@ -186,8 +180,7 @@ def reset_simulation_state() -> Dict[str, Any]:
     return {"message": "AI Engine simulation state reset successfully."}
 
 
-
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=FASTAPI_PORT)
 
+    uvicorn.run(app, host="0.0.0.0", port=FASTAPI_PORT)

@@ -5,7 +5,6 @@ Malicious (+ weight) or Benign (- weight) and calculates global feature importan
 """
 
 from typing import Dict, Any, List
-import numpy as np
 import pandas as pd
 import shap
 

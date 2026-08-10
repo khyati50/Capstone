@@ -15,15 +15,19 @@ export default function RiskGauge({ riskData }) {
     }
   }, [riskData]);
 
-  const score = data?.overall_score ?? data?.score ?? data?.risk_score ?? 15.0;
+  const score = data?.overall_score ?? data?.score ?? data?.risk_score ?? 0.0;
   const level = data?.overall_level ?? data?.level ?? data?.risk_level ?? 'LOW';
-  const bd = data?.breakdown || data?.risk_breakdown || {
-    ai_confidence_weight: 15.0,
-    rule_hits_weight: 0.0,
-    event_severity_weight: 5.0,
-    chain_length_weight: 0.0,
-    scope_weight: 0.0
-  };
+  const bd = data?.breakdown || data?.risk_breakdown || {};
+  const sub = data?.sublines || {};
+
+  const aiConf = bd.ai_confidence_weight ?? 0.0;
+  const ruleHits = bd.rule_hits_weight ?? 0.0;
+  const mitreTactic = bd.mitre_tactic_weight ?? bd.event_severity_weight ?? 0.0;
+  const tacticDiversity = bd.tactic_diversity_weight ?? bd.chain_length_weight ?? 0.0;
+  const scope = bd.scope_weight ?? 0.0;
+  const multiplier = bd.corroboration_multiplier ?? 1.0;
+
+  const isIdle = score === 0;
 
   return (
     <div className="space-y-6">
@@ -44,53 +48,104 @@ export default function RiskGauge({ riskData }) {
               <span className="text-4xl font-black text-white">{typeof score === 'number' ? score.toFixed(1) : score}</span>
             </div>
           </div>
-          <span className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 rounded-full text-xs font-bold font-mono uppercase">
-            LEVEL: {level}
-          </span>
+          <div className="flex flex-col items-center space-y-2">
+            <span className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 rounded-full text-xs font-bold font-mono uppercase">
+              LEVEL: {level}
+            </span>
+            {multiplier > 1.0 && (
+              <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[11px] font-mono">
+                Corroboration Multiplier: ×{multiplier.toFixed(2)}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Multi-Factor Score Breakdown */}
         <div className="glass-panel p-6 rounded-xl lg:col-span-2 space-y-4">
-          <h3 className="text-sm font-semibold text-gray-200">Risk Calculation Score Breakdown</h3>
-          <div className="space-y-3 text-xs">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-semibold text-gray-200">Risk Calculation Score Breakdown</h3>
+            <span className="text-xs font-mono text-gray-400">Multiplier: ×{multiplier.toFixed(2)}</span>
+          </div>
+
+          <div className="space-y-3.5 text-xs">
+            {/* Factor 1: AI Confidence */}
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
-                <span>AI Confidence Weight (30%)</span>
-                <span className="font-mono text-emerald-400">{bd.ai_confidence_weight} / 30.0</span>
+                <span>AI Confidence Weight (25%)</span>
+                <span className="font-mono text-emerald-400">{aiConf.toFixed(1)} / 25.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-emerald-400 h-full rounded-full" style={{ width: `${(bd.ai_confidence_weight / 30.0) * 100}%` }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full">
+                <div className="bg-emerald-400 h-full rounded-full" style={{ width: `${(aiConf / 25.0) * 100}%` }}></div>
+              </div>
+              {!isIdle && sub.ai_confidence_subline && (
+                <p className="text-[11px] text-emerald-400/80 font-mono mt-1 pl-2 border-l border-emerald-500/30">
+                  └─ {sub.ai_confidence_subline}
+                </p>
+              )}
             </div>
 
+            {/* Factor 2: Rule Coverage */}
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
-                <span>Triggered Rules Weight (20%)</span>
-                <span className="font-mono text-amber-400">{bd.rule_hits_weight} / 20.0</span>
+                <span>Triggered Rules Coverage (20%)</span>
+                <span className="font-mono text-amber-400">{ruleHits.toFixed(1)} / 20.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-amber-400 h-full rounded-full" style={{ width: `${(bd.rule_hits_weight / 20.0) * 100}%` }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full">
+                <div className="bg-amber-400 h-full rounded-full" style={{ width: `${(ruleHits / 20.0) * 100}%` }}></div>
+              </div>
+              {!isIdle && sub.rule_hits_subline && (
+                <p className="text-[11px] text-amber-400/80 font-mono mt-1 pl-2 border-l border-amber-500/30">
+                  └─ {sub.rule_hits_subline}
+                </p>
+              )}
             </div>
 
+            {/* Factor 3: MITRE Tactic Stage */}
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
-                <span>Event Severity Rating (15%)</span>
-                <span className="font-mono text-red-400">{bd.event_severity_weight} / 15.0</span>
+                <span>MITRE Tactic Stage (20%)</span>
+                <span className="font-mono text-red-400">{mitreTactic.toFixed(1)} / 20.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-red-400 h-full rounded-full" style={{ width: `${(bd.event_severity_weight / 15.0) * 100}%` }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full">
+                <div className="bg-red-400 h-full rounded-full" style={{ width: `${(mitreTactic / 20.0) * 100}%` }}></div>
+              </div>
+              {!isIdle && sub.mitre_tactic_subline && (
+                <p className="text-[11px] text-red-400/80 font-mono mt-1 pl-2 border-l border-red-500/30">
+                  └─ {sub.mitre_tactic_subline}
+                </p>
+              )}
             </div>
 
+            {/* Factor 4: Tactic Diversity */}
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
-                <span>Attack Chain Length Progression (20%)</span>
-                <span className="font-mono text-blue-400">{bd.chain_length_weight} / 20.0</span>
+                <span>Attack Tactic Diversity (20%)</span>
+                <span className="font-mono text-blue-400">{tacticDiversity.toFixed(1)} / 20.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-blue-400 h-full rounded-full" style={{ width: `${(bd.chain_length_weight / 20.0) * 100}%` }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full">
+                <div className="bg-blue-400 h-full rounded-full" style={{ width: `${(tacticDiversity / 20.0) * 100}%` }}></div>
+              </div>
+              {!isIdle && sub.tactic_diversity_subline && (
+                <p className="text-[11px] text-blue-400/80 font-mono mt-1 pl-2 border-l border-blue-500/30">
+                  └─ {sub.tactic_diversity_subline}
+                </p>
+              )}
             </div>
 
+            {/* Factor 5: Scope */}
             <div>
               <div className="flex justify-between text-gray-400 mb-1">
                 <span>Impacted Host & User Scope (15%)</span>
-                <span className="font-mono text-purple-400">{bd.scope_weight} / 15.0</span>
+                <span className="font-mono text-purple-400">{scope.toFixed(1)} / 15.0</span>
               </div>
-              <div className="w-full bg-gray-800 h-2 rounded-full"><div className="bg-purple-400 h-full rounded-full" style={{ width: `${(bd.scope_weight / 15.0) * 100}%` }}></div></div>
+              <div className="w-full bg-gray-800 h-2 rounded-full">
+                <div className="bg-purple-400 h-full rounded-full" style={{ width: `${(scope / 15.0) * 100}%` }}></div>
+              </div>
+              {!isIdle && sub.scope_subline && (
+                <p className="text-[11px] text-purple-400/80 font-mono mt-1 pl-2 border-l border-purple-500/30">
+                  └─ {sub.scope_subline}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -98,4 +153,3 @@ export default function RiskGauge({ riskData }) {
     </div>
   );
 }
-

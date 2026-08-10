@@ -11,7 +11,6 @@ Calculates behavioral threat detection features:
 """
 
 import pandas as pd
-import numpy as np
 import math
 
 
@@ -51,7 +50,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
         ("ProcessName", ""),
         ("ParentProcessName", ""),
         ("Computer", "CORP-HOST-01"),
-        ("TargetUserName", "administrator")
+        ("TargetUserName", "administrator"),
     ]:
         if col not in out.columns:
             out[col] = default_val
@@ -60,12 +59,9 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     out["is_failed_login"] = (out["EventID"] == 4625).astype(int)
     try:
         out_temp = out.set_index("TimeCreated")
-        out["failed_login_count_5m"] = (
-            out_temp["is_failed_login"].rolling("5min", closed="left").sum().values
-        )
+        out["failed_login_count_5m"] = out_temp["is_failed_login"].rolling("5min", closed="left").sum().values
     except Exception:
         out["failed_login_count_5m"] = 0
-
 
     # 2. time_delta_prev_event
     if "TimeCreated" in out.columns:
@@ -81,9 +77,19 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
 
     ps_proc_terms = ["powershell", "pwsh", "powershell_ise"]
     ps_cmd_terms = [
-        "powershell", "pwsh", "-encodedcommand", "-enc ", "-e ",
-        "downloadstring", "iex", "bypass", "-w hidden", "-nop",
-        "sqb", "awv4", "cabo"
+        "powershell",
+        "pwsh",
+        "-encodedcommand",
+        "-enc ",
+        "-e ",
+        "downloadstring",
+        "iex",
+        "bypass",
+        "-w hidden",
+        "-nop",
+        "sqb",
+        "awv4",
+        "cabo",
     ]
 
     has_ps_proc = proc_str.apply(lambda p: any(t in p for t in ps_proc_terms))
@@ -118,4 +124,3 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     out.drop(columns=["is_failed_login", "parent_child"], inplace=True, errors="ignore")
 
     return out
-
