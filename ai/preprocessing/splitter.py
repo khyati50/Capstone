@@ -48,4 +48,3 @@ def scenario_level_split(
     test_df = temp_df.iloc[test_idx].copy().reset_index(drop=True)
 
     return train_df, val_df, test_df
-

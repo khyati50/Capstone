@@ -34,3 +34,4 @@ Thumbs.db
 # Temporary scratch logs
 *.log
 scratch/
+docs

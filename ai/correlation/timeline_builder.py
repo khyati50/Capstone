@@ -43,18 +43,19 @@ class TimelineBuilder:
             elif event_id == 4732:
                 node_label = "Privileged Group Escalation (4732)"
 
-            nodes.append({
-                "step": idx + 1,
-                "node_id": f"node_{idx+1}",
-                "event_id": event_id,
-                "label": node_label,
-                "timestamp": raw.get("TimeCreated", ""),
-                "severity": evt.get("severity", "Medium"),
-                "confidence": evt.get("confidence", 0.8),
-                "computer": raw.get("Computer", ""),
-                "user": raw.get("TargetUserName", raw.get("SubjectUserName", "")),
-                "process": raw.get("ProcessName", ""),
-            })
+            nodes.append(
+                {
+                    "step": idx + 1,
+                    "node_id": f"node_{idx+1}",
+                    "event_id": event_id,
+                    "label": node_label,
+                    "timestamp": raw.get("TimeCreated", ""),
+                    "severity": evt.get("severity", "Medium"),
+                    "confidence": evt.get("confidence", 0.8),
+                    "computer": raw.get("Computer", ""),
+                    "user": raw.get("TargetUserName", raw.get("SubjectUserName", "")),
+                    "process": raw.get("ProcessName", ""),
+                }
+            )
 
         return nodes
-

@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Frontend React Component Structure Tests
 # ──────────────────────────────────────────────
 
+
 class TestFrontendComponentStructure:
     """Verify all 7 React dashboard page components exist and are well-formed."""
 
@@ -97,6 +98,7 @@ class TestFrontendComponentStructure:
 # Frontend Configuration Tests
 # ──────────────────────────────────────────────
 
+
 class TestFrontendConfiguration:
     """Verify frontend build tools and dependencies."""
 
@@ -107,6 +109,7 @@ class TestFrontendConfiguration:
     def test_package_json_has_react(self):
         """package.json must declare react as dependency."""
         import json
+
         pkg = json.loads((BASE_DIR / "frontend" / "package.json").read_text())
         all_deps = {}
         all_deps.update(pkg.get("dependencies", {}))
@@ -116,6 +119,7 @@ class TestFrontendConfiguration:
     def test_package_json_has_dev_script(self):
         """package.json must have a 'dev' script for local development."""
         import json
+
         pkg = json.loads((BASE_DIR / "frontend" / "package.json").read_text())
         assert "dev" in pkg.get("scripts", {})
 
@@ -135,6 +139,7 @@ class TestFrontendConfiguration:
 # ──────────────────────────────────────────────
 # Backend Express Route Structure Tests
 # ──────────────────────────────────────────────
+
 
 class TestBackendRouteStructure:
     """Verify all 7 Express backend route modules exist and are well-formed."""
@@ -170,8 +175,7 @@ class TestBackendRouteStructure:
     def test_route_uses_express_router(self, route_file):
         """Each route file must use express.Router()."""
         content = (self.ROUTES_DIR / route_file).read_text(encoding="utf-8")
-        assert "express.Router()" in content or "Router()" in content, \
-            f"{route_file} missing express.Router()"
+        assert "express.Router()" in content or "Router()" in content, f"{route_file} missing express.Router()"
 
     def test_server_js_exists(self):
         """Backend server.js entry point must exist."""
@@ -201,6 +205,7 @@ class TestBackendRouteStructure:
 # ──────────────────────────────────────────────
 # Backend Configuration Tests
 # ──────────────────────────────────────────────
+
 
 class TestBackendConfiguration:
     """Verify backend dependencies and configuration files."""
@@ -233,6 +238,7 @@ class TestBackendConfiguration:
 # ──────────────────────────────────────────────
 # Project Governance Files Tests
 # ──────────────────────────────────────────────
+
 
 class TestGovernanceFiles:
     """Verify governance documentation files exist with content."""

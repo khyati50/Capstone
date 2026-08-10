@@ -17,26 +17,31 @@ async function sendPredictionRequest(eventData) {
     const isPriv = Number(eventData.privilege_escalation_flag || 0);
 
     const isMal = (failed >= 3 || isPs === 1 || isPriv === 1) ? 1 : 0;
+    // Return a conservative fallback when the Python service is unreachable.
+    // Do NOT provide hardcoded final `risk_score` values that mislead the UI/ops team.
     return {
       prediction: isMal,
-      confidence: isMal ? 0.92 : 0.96,
-      severity: isMal ? 'Critical' : 'Low',
+      // Provide a moderate confidence for fallback-detected conditions, but do not finalize a risk score here.
+      confidence: isMal ? 0.92 : 0.5,
+      severity: isMal ? 'High' : 'Low',
       model_version: 'v1.0.0-fallback-proxy',
       shap_values: {
         failed_login_count_5m: failed >= 3 ? 0.42 : -0.05,
         is_powershell_executed: isPs === 1 ? 0.38 : -0.05,
         privilege_escalation_flag: isPriv === 1 ? 0.45 : -0.05
       },
-      threat_summary: isMal ? `Malicious activity detected for event` : `Benign event observed`,
-      threat_type: isMal ? 'Behavioral Threat Anomaly' : 'Benign Activity',
-      explanation: isMal ? 'Failed logins or execution policy bypass detected.' : 'Event features within normal range.',
-      recommendations: ['1. Review user activity.', '2. Validate host policy.'],
+      threat_summary: isMal ? `Fallback: suspicious activity detected` : `Fallback: benign event observed`,
+      threat_type: isMal ? 'Behavioral Threat Anomaly (Fallback)' : 'Benign Activity',
+      explanation: isMal ? 'Proxy fallback: heuristics flagged this event. Start Python service for accurate scoring.' : 'Event features within normal range.',
+      recommendations: ['1. Start the Python prediction microservice to obtain accurate risk scores.', '2. Review event details.'],
       incident_id: `INC-${Date.now().toString().slice(-5)}`,
       chain_length: 1,
-      risk_score: isMal ? 84.5 : 15.0,
-      risk_level: isMal ? 'Critical' : 'Low',
-      mitre_mapping: [{ tactic: 'Execution', technique_name: 'Command Scripting', technique_id: 'T1059' }],
-      timeline_nodes: [{ step: 1, event_id: eventData.EventID || 4624, label: 'Logged Event', timestamp: new Date().toISOString() }]
+      // Do not set a definitive risk_score in proxy fallback; let downstream store mark it as fallback.
+      risk_score: null,
+      risk_level: isMal ? 'Fallback-Suspect' : 'Fallback-Unknown',
+      is_fallback: true,
+      mitre_mapping: [],
+      timeline_nodes: [{ step: 1, event_id: eventData.EventID || 4624, label: 'Logged Event (Fallback)', timestamp: new Date().toISOString() }]
     };
   }
 }

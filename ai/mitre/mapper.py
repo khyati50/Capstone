@@ -74,28 +74,33 @@ class MitreMapper:
 
         cmd = str(raw.get("CommandLine", "")).lower()
         if "powershell" in cmd and not any(m["technique_id"] == "T1059.001" for m in mapped_now):
-            mapped_now.append({
-                "tactic": "Execution",
-                "technique_name": "Command and Scripting Interpreter: PowerShell",
-                "technique_id": "T1059.001",
-            })
+            mapped_now.append(
+                {
+                    "tactic": "Execution",
+                    "technique_name": "Command and Scripting Interpreter: PowerShell",
+                    "technique_id": "T1059.001",
+                }
+            )
 
         # Item 9: Dynamic MITRE Mapping over correlated event chains
         event_chain = event_or_alert.get("event_sequence", [])
         if 4625 in event_chain and 4624 in event_chain and not any(m["technique_id"] == "T1078" for m in mapped_now):
-            mapped_now.append({
-                "tactic": "Initial Access",
-                "technique_name": "Valid Accounts: Domain / Local Accounts",
-                "technique_id": "T1078",
-            })
+            mapped_now.append(
+                {
+                    "tactic": "Initial Access",
+                    "technique_name": "Valid Accounts: Domain / Local Accounts",
+                    "technique_id": "T1078",
+                }
+            )
 
         if not mapped_now:
-            mapped_now.append({
-                "tactic": "Defense Evasion",
-                "technique_name": "Unusual Log Activity Anomaly",
-                "technique_id": "T1036",
-            })
-
+            mapped_now.append(
+                {
+                    "tactic": "Defense Evasion",
+                    "technique_name": "Unusual Log Activity Anomaly",
+                    "technique_id": "T1036",
+                }
+            )
 
         # Update cumulative active_techniques counter and populate default attributes
         result_techniques = []
@@ -107,7 +112,7 @@ class MitreMapper:
                     "technique_name": tech["technique_name"],
                     "technique_id": tid,
                     "active_alerts": 1,
-                    "level": "High"
+                    "level": "High",
                 }
             else:
                 self.active_techniques[tid]["active_alerts"] += 1
@@ -117,4 +122,3 @@ class MitreMapper:
             result_techniques.append(dict(self.active_techniques[tid]))
 
         return result_techniques
-

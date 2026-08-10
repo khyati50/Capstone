@@ -17,10 +17,10 @@ from ai.correlation.timeline_builder import TimelineBuilder
 from ai.correlation.risk_engine import DynamicRiskEngine
 from ai.mitre.mapper import MitreMapper
 
-
 # ──────────────────────────────────────────────
 # Full Pipeline Integration Tests
 # ──────────────────────────────────────────────
+
 
 class TestFullPipelineIntegration:
     """End-to-end test from raw event to final intelligence package."""
@@ -75,9 +75,7 @@ class TestFullPipelineIntegration:
 
         # Step 7: Dynamic Risk Scoring
         risk_engine = DynamicRiskEngine()
-        risk = risk_engine.calculate_risk_score(
-            alert, chain_length=corr_result["chain_length"]
-        )
+        risk = risk_engine.calculate_risk_score(alert, chain_length=corr_result["chain_length"])
         assert 0 <= risk["score"] <= 100
         assert risk["level"] in ["Low", "Medium", "High", "Critical"]
         assert "breakdown" in risk
@@ -150,6 +148,7 @@ class TestFullPipelineIntegration:
 # Multi-Stage Attack Chain Integration
 # ──────────────────────────────────────────────
 
+
 class TestMultiStageAttackChain:
     """Test multi-event correlation forming attack chains."""
 
@@ -160,15 +159,27 @@ class TestMultiStageAttackChain:
         risk_engine = DynamicRiskEngine()
 
         events = [
-            {"severity": "High", "confidence": 0.85, "event_id": 4625,
-             "triggered_rules": [{"rule_id": "r1"}],
-             "raw_event": {"EventID": 4625, "Computer": "HOST-A", "TargetUserName": "admin"}},
-            {"severity": "Medium", "confidence": 0.70, "event_id": 4624,
-             "triggered_rules": [],
-             "raw_event": {"EventID": 4624, "Computer": "HOST-A", "TargetUserName": "admin"}},
-            {"severity": "Critical", "confidence": 0.95, "event_id": 4672,
-             "triggered_rules": [{"rule_id": "r2"}, {"rule_id": "r3"}],
-             "raw_event": {"EventID": 4672, "Computer": "HOST-A", "TargetUserName": "admin"}},
+            {
+                "severity": "High",
+                "confidence": 0.85,
+                "event_id": 4625,
+                "triggered_rules": [{"rule_id": "r1"}],
+                "raw_event": {"EventID": 4625, "Computer": "HOST-A", "TargetUserName": "admin"},
+            },
+            {
+                "severity": "Medium",
+                "confidence": 0.70,
+                "event_id": 4624,
+                "triggered_rules": [],
+                "raw_event": {"EventID": 4624, "Computer": "HOST-A", "TargetUserName": "admin"},
+            },
+            {
+                "severity": "Critical",
+                "confidence": 0.95,
+                "event_id": 4672,
+                "triggered_rules": [{"rule_id": "r2"}, {"rule_id": "r3"}],
+                "raw_event": {"EventID": 4672, "Computer": "HOST-A", "TargetUserName": "admin"},
+            },
         ]
 
         results = []
@@ -189,19 +200,23 @@ class TestMultiStageAttackChain:
         assert nodes[2]["event_id"] == 4672
 
         # Risk score escalates with chain
-        risk = risk_engine.calculate_risk_score(
-            events[2], chain_length=3, impacted_hosts_count=1
-        )
+        risk = risk_engine.calculate_risk_score(events[2], chain_length=3, impacted_hosts_count=1)
         assert risk["score"] > 60
         assert risk["level"] in ["High", "Critical"]
 
     def test_separate_hosts_create_separate_incidents(self):
         """Events on different hosts should create separate incidents."""
         correlator = EventCorrelator()
-        evt1 = {"severity": "High", "confidence": 0.9,
-                "raw_event": {"EventID": 4625, "Computer": "HOST-A", "TargetUserName": "user1"}}
-        evt2 = {"severity": "High", "confidence": 0.9,
-                "raw_event": {"EventID": 4625, "Computer": "HOST-B", "TargetUserName": "user2"}}
+        evt1 = {
+            "severity": "High",
+            "confidence": 0.9,
+            "raw_event": {"EventID": 4625, "Computer": "HOST-A", "TargetUserName": "user1"},
+        }
+        evt2 = {
+            "severity": "High",
+            "confidence": 0.9,
+            "raw_event": {"EventID": 4625, "Computer": "HOST-B", "TargetUserName": "user2"},
+        }
         res1 = correlator.correlate_event(evt1)
         res2 = correlator.correlate_event(evt2)
         assert res1["incident_id"] != res2["incident_id"]
@@ -210,6 +225,7 @@ class TestMultiStageAttackChain:
 # ──────────────────────────────────────────────
 # Simulation -> Detection Integration
 # ──────────────────────────────────────────────
+
 
 class TestSimulationIntegration:
     """Test that simulation scenarios trigger proper detections."""

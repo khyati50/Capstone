@@ -15,6 +15,7 @@ client = TestClient(app)
 # Root Endpoint Tests
 # ──────────────────────────────────────────────
 
+
 class TestRootEndpoint:
     """Tests for GET / root welcome endpoint."""
 
@@ -40,6 +41,7 @@ class TestRootEndpoint:
 # ──────────────────────────────────────────────
 # Health Check Endpoint Tests
 # ──────────────────────────────────────────────
+
 
 class TestHealthEndpoint:
     """Tests for GET /health service health endpoint."""
@@ -67,6 +69,7 @@ class TestHealthEndpoint:
 # ──────────────────────────────────────────────
 # Single Prediction Endpoint Tests
 # ──────────────────────────────────────────────
+
 
 class TestPredictEndpoint:
     """Tests for POST /predict single event prediction."""
@@ -140,6 +143,7 @@ class TestPredictEndpoint:
 # Batch Prediction Endpoint Tests
 # ──────────────────────────────────────────────
 
+
 class TestBatchPredictEndpoint:
     """Tests for POST /predict/batch batch inference."""
 
@@ -179,8 +183,18 @@ class TestBatchPredictEndpoint:
     def test_batch_mixed_benign_and_malicious(self):
         """Batch should handle a mix of benign and malicious events."""
         payload = [
-            {"EventID": 4624, "failed_login_count_5m": 0.0, "is_powershell_executed": 0, "privilege_escalation_flag": 0},
-            {"EventID": 4625, "failed_login_count_5m": 10.0, "is_powershell_executed": 1, "privilege_escalation_flag": 1},
+            {
+                "EventID": 4624,
+                "failed_login_count_5m": 0.0,
+                "is_powershell_executed": 0,
+                "privilege_escalation_flag": 0,
+            },
+            {
+                "EventID": 4625,
+                "failed_login_count_5m": 10.0,
+                "is_powershell_executed": 1,
+                "privilege_escalation_flag": 1,
+            },
         ]
         response = client.post("/predict/batch", json=payload)
         data = response.json()
@@ -192,6 +206,7 @@ class TestBatchPredictEndpoint:
 # ──────────────────────────────────────────────
 # Swagger/OpenAPI Docs Endpoint Tests
 # ──────────────────────────────────────────────
+
 
 class TestDocsEndpoint:
     """Tests for auto-generated FastAPI documentation endpoints."""
@@ -213,6 +228,7 @@ class TestDocsEndpoint:
 # ──────────────────────────────────────────────
 # Error Handling & Edge Cases
 # ──────────────────────────────────────────────
+
 
 class TestErrorHandling:
     """Tests for error handling and invalid requests."""

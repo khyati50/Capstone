@@ -59,7 +59,9 @@ class HybridDetectionEngine:
 
         # 2. Event severity factor
         event_id = int(event.get("EventID", 0))
-        event_sev_factor = 0.90 if event_id in [4672, 4720, 4732, 7045] else (0.75 if event_id in [4625, 4688] else 0.40)
+        event_sev_factor = (
+            0.90 if event_id in [4672, 4720, 4732, 7045] else (0.75 if event_id in [4625, 4688] else 0.40)
+        )
 
         # 3. Weighted Confidence Fusion
         if has_ai and has_rules:
@@ -80,10 +82,11 @@ class HybridDetectionEngine:
         else:
             alert_source = "BENIGN"
             severity = "Low"
-            final_conf = 0.95
+            # BENIGN events should carry no confidence mass for maliciousness.
+            # Previous value (0.95) falsely inflated downstream risk scoring.
+            final_conf = 0.0
 
-        is_alert = (alert_source != "BENIGN")
-
+        is_alert = alert_source != "BENIGN"
 
         return {
             "is_alert": is_alert,

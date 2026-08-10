@@ -35,56 +35,66 @@ class RuleEngine:
 
         # Rule 1: Brute Force Threshold
         if event_id == 4625 or failed_count >= 5:
-            triggered.append({
-                "rule_id": "RULE_BRUTE_FORCE_001",
-                "rule_name": "Brute Force Failed Authentication Threshold",
-                "severity": "High",
-                "tactic": "Credential Access",
-                "technique_id": "T1110",
-                "description": f"Failed login burst detected ({failed_count} attempts within 5 minutes).",
-            })
+            triggered.append(
+                {
+                    "rule_id": "RULE_BRUTE_FORCE_001",
+                    "rule_name": "Brute Force Failed Authentication Threshold",
+                    "severity": "High",
+                    "tactic": "Credential Access",
+                    "technique_id": "T1110",
+                    "description": f"Failed login burst detected ({failed_count} attempts within 5 minutes).",
+                }
+            )
 
         # Rule 2: Suspicious PowerShell Execution
         if event_id == 4688 or "powershell" in proc or "powershell" in cmd:
             if any(term in cmd for term in ["-encodedcommand", "bypass", "downloadstring", "iex", "hidden"]):
-                triggered.append({
-                    "rule_id": "RULE_POWERSHELL_SUSPICIOUS_002",
-                    "rule_name": "Suspicious Obfuscated PowerShell Execution",
-                    "severity": "High",
-                    "tactic": "Execution",
-                    "technique_id": "T1059.001",
-                    "description": "PowerShell executed with execution policy bypass or encoded payload.",
-                })
+                triggered.append(
+                    {
+                        "rule_id": "RULE_POWERSHELL_SUSPICIOUS_002",
+                        "rule_name": "Suspicious Obfuscated PowerShell Execution",
+                        "severity": "High",
+                        "tactic": "Execution",
+                        "technique_id": "T1059.001",
+                        "description": "PowerShell executed with execution policy bypass or encoded payload.",
+                    }
+                )
 
         # Rule 3: Privilege Escalation
         if event_id == 4672:
-            triggered.append({
-                "rule_id": "RULE_PRIV_ESC_003",
-                "rule_name": "Special Privileges Assigned To User",
-                "severity": "Medium",
-                "tactic": "Privilege Escalation",
-                "technique_id": "T1078",
-                "description": "Sensitive admin privileges assigned to active logon session.",
-            })
+            triggered.append(
+                {
+                    "rule_id": "RULE_PRIV_ESC_003",
+                    "rule_name": "Special Privileges Assigned To User",
+                    "severity": "Medium",
+                    "tactic": "Privilege Escalation",
+                    "technique_id": "T1078",
+                    "description": "Sensitive admin privileges assigned to active logon session.",
+                }
+            )
 
         # Rule 4: New Local Account Created
         if event_id == 4720:
-            triggered.append({
-                "rule_id": "RULE_ACCOUNT_CREATION_004",
-                "rule_name": "New Local User Account Created",
-                "severity": "High",
-                "tactic": "Persistence",
-                "technique_id": "T1136.001",
-                "description": "New local user account created.",
-            })
+            triggered.append(
+                {
+                    "rule_id": "RULE_ACCOUNT_CREATION_004",
+                    "rule_name": "New Local User Account Created",
+                    "severity": "High",
+                    "tactic": "Persistence",
+                    "technique_id": "T1136.001",
+                    "description": "New local user account created.",
+                }
+            )
         elif event_id == 4732:
-            triggered.append({
-                "rule_id": "RULE_GROUP_MEMBER_ADDED_005",
-                "rule_name": "User Added to Privileged Local Group",
-                "severity": "High",
-                "tactic": "Privilege Escalation",
-                "technique_id": "T1069.001",
-                "description": "User added to local administrators security group.",
-            })
+            triggered.append(
+                {
+                    "rule_id": "RULE_GROUP_MEMBER_ADDED_005",
+                    "rule_name": "User Added to Privileged Local Group",
+                    "severity": "High",
+                    "tactic": "Privilege Escalation",
+                    "technique_id": "T1069.001",
+                    "description": "User added to local administrators security group.",
+                }
+            )
 
         return triggered

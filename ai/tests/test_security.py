@@ -25,6 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # WDAC & Dependency Pinning Tests
 # ──────────────────────────────────────────────
 
+
 class TestWDACCompliance:
     """Verify WDAC-compatible dependency pinning."""
 
@@ -71,12 +72,14 @@ class TestWDACCompliance:
 # SHAP Defensive Fallback Tests
 # ──────────────────────────────────────────────
 
+
 class TestShapDefensiveFallback:
     """Verify SHAP explainability gracefully handles failure scenarios."""
 
     def test_shap_explainer_without_model(self):
         """ShapExplainer must work without a loaded model (proxy fallback)."""
         from ai.explainability.shap_explainer import ShapExplainer
+
         explainer = ShapExplainer(model_obj=None)
         event = {"failed_login_count_5m": 5, "is_powershell_executed": 1}
         weights = explainer.explain_local_event(event)
@@ -99,6 +102,7 @@ class TestShapDefensiveFallback:
     def test_shap_explainer_returns_positive_for_malicious_features(self):
         """Malicious feature values must get positive SHAP proxy weights."""
         from ai.explainability.shap_explainer import ShapExplainer
+
         explainer = ShapExplainer()
         event = {
             "failed_login_count_5m": 10,
@@ -113,6 +117,7 @@ class TestShapDefensiveFallback:
     def test_shap_explainer_returns_negative_for_benign_features(self):
         """Benign feature values must get negative SHAP proxy weights."""
         from ai.explainability.shap_explainer import ShapExplainer
+
         explainer = ShapExplainer()
         event = {
             "failed_login_count_5m": 0,
@@ -127,6 +132,7 @@ class TestShapDefensiveFallback:
 # ──────────────────────────────────────────────
 # API Input Sanitization & Injection Tests
 # ──────────────────────────────────────────────
+
 
 class TestInputSanitization:
     """Verify API gracefully handles adversarial and malformed inputs."""
@@ -192,6 +198,7 @@ class TestInputSanitization:
 # Backend Security Structure Tests
 # ──────────────────────────────────────────────
 
+
 class TestBackendSecurityStructure:
     """Verify backend has proper security middleware and configuration."""
 
@@ -243,6 +250,7 @@ class TestBackendSecurityStructure:
 # MySQL Schema Security Tests
 # ──────────────────────────────────────────────
 
+
 class TestMySQLSchemaSecurity:
     """Verify database schema uses proper security patterns."""
 
@@ -278,5 +286,7 @@ class TestMySQLSchemaSecurity:
         assert "password_hash" in content
         # Ensure it's not just "password" (plaintext)
         lines = content.split("\n")
-        password_lines = [l for l in lines if "password" in l.lower() and "hash" not in l.lower() and "VARCHAR" in l.upper()]
+        password_lines = [
+            l for l in lines if "password" in l.lower() and "hash" not in l.lower() and "VARCHAR" in l.upper()
+        ]
         assert len(password_lines) == 0, "Found plaintext password column without _hash suffix"

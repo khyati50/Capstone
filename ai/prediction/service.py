@@ -6,6 +6,7 @@ once into memory at startup and provides fast inference.
 
 import json
 import joblib
+from pathlib import Path
 from typing import Dict, Any
 import pandas as pd
 

@@ -47,6 +47,7 @@ class TestNegativeCases:
     def test_missing_fields_in_feature_engineering(self):
         """Empty or sparse DataFrame should process without throwing KeyErrors."""
         import pandas as pd
+
         sparse_df = pd.DataFrame([{"Computer": "HOST-01"}])
         res = engineer_features(sparse_df)
 

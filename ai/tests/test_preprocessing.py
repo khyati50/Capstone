@@ -10,41 +10,43 @@ from ai.preprocessing.splitter import scenario_level_split
 
 def test_feature_engineering_calculation():
     """Test calculation of domain-informed features on sample data."""
-    raw_data = pd.DataFrame([
-        {
-            "scenario_id": "scen_1",
-            "TimeCreated": "2026-08-06T10:00:00Z",
-            "EventID": 4625,
-            "Computer": "HOST-01",
-            "TargetUserName": "userA",
-            "ProcessName": "cmd.exe",
-            "ParentProcessName": "explorer.exe",
-            "CommandLine": "cmd.exe /c dir",
-            "LogonType": 3,
-        },
-        {
-            "scenario_id": "scen_1",
-            "TimeCreated": "2026-08-06T10:02:00Z",
-            "EventID": 4688,
-            "Computer": "HOST-01",
-            "TargetUserName": "userA",
-            "ProcessName": "powershell.exe",
-            "ParentProcessName": "cmd.exe",
-            "CommandLine": "powershell -ExecutionPolicy Bypass",
-            "LogonType": 3,
-        },
-        {
-            "scenario_id": "scen_2",
-            "TimeCreated": "2026-08-06T10:03:00Z",
-            "EventID": 4672,
-            "Computer": "HOST-02",
-            "TargetUserName": "adminB",
-            "ProcessName": "lsass.exe",
-            "ParentProcessName": "wininit.exe",
-            "CommandLine": "",
-            "LogonType": 2,
-        },
-    ])
+    raw_data = pd.DataFrame(
+        [
+            {
+                "scenario_id": "scen_1",
+                "TimeCreated": "2026-08-06T10:00:00Z",
+                "EventID": 4625,
+                "Computer": "HOST-01",
+                "TargetUserName": "userA",
+                "ProcessName": "cmd.exe",
+                "ParentProcessName": "explorer.exe",
+                "CommandLine": "cmd.exe /c dir",
+                "LogonType": 3,
+            },
+            {
+                "scenario_id": "scen_1",
+                "TimeCreated": "2026-08-06T10:02:00Z",
+                "EventID": 4688,
+                "Computer": "HOST-01",
+                "TargetUserName": "userA",
+                "ProcessName": "powershell.exe",
+                "ParentProcessName": "cmd.exe",
+                "CommandLine": "powershell -ExecutionPolicy Bypass",
+                "LogonType": 3,
+            },
+            {
+                "scenario_id": "scen_2",
+                "TimeCreated": "2026-08-06T10:03:00Z",
+                "EventID": 4672,
+                "Computer": "HOST-02",
+                "TargetUserName": "adminB",
+                "ProcessName": "lsass.exe",
+                "ParentProcessName": "wininit.exe",
+                "CommandLine": "",
+                "LogonType": 2,
+            },
+        ]
+    )
 
     featured_df = engineer_features(raw_data)
 

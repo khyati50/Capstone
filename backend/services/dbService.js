@@ -100,15 +100,25 @@ async function saveProcessedPipelineResult(pipelineResult) {
       recommendations: pipelineResult.recommendations,
       timestamp: timestamp,
       incident_id: pipelineResult.incident_id || 'INC-LIVE-01',
-      risk_score: pipelineResult.risk_score || 85.0,
-      risk_level: pipelineResult.risk_level || 'Critical',
+      // Preserve explicit pipeline-provided risk score; do not inject hardcoded defaults here.
+      risk_score: pipelineResult.risk_score ?? null,
+      // Default to provided risk_level, otherwise mark as 'Fallback' or 'Unknown' depending on pipeline signal.
+      risk_level: pipelineResult.risk_level ?? (pipelineResult.is_fallback ? 'Fallback' : 'Unknown'),
       mitre_mapping: pipelineResult.mitre_mapping || []
     };
     memoryStore.alerts.unshift(alertEntry);
 
     // Update risk metrics
-    memoryStore.risk.overall_score = pipelineResult.risk_score ?? memoryStore.risk.overall_score;
-    memoryStore.risk.overall_level = pipelineResult.risk_level ?? memoryStore.risk.overall_level;
+    // Only update global risk metrics when a concrete risk_score is provided by the pipeline.
+    if (typeof pipelineResult.risk_score === 'number') {
+      memoryStore.risk.overall_score = pipelineResult.risk_score;
+      memoryStore.risk.overall_level = pipelineResult.risk_level || memoryStore.risk.overall_level;
+    } else if (pipelineResult.is_fallback) {
+      // If the pipeline result is a fallback, preserve previous overall_score and surface fallback info.
+      memoryStore.risk.sublines = memoryStore.risk.sublines || {};
+      memoryStore.risk.sublines.fallback_notice = 'Prediction microservice unreachable — using proxy heuristics. Start Python service for accurate scoring.';
+      memoryStore.risk.overall_level = memoryStore.risk.overall_level || (pipelineResult.risk_level || 'Unknown');
+    }
     memoryStore.risk.active_incidents_count = Object.keys(memoryStore.incidents).length || 1;
     if (pipelineResult.risk_breakdown) {
       memoryStore.risk.breakdown = pipelineResult.risk_breakdown;
