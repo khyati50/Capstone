@@ -265,6 +265,70 @@ class TestLiveWindowsEventReader:
         assert reader.validation_failures == 1
         assert reader.last_record_id == 1000  # Must NOT advance to 99999 on failure!
 
+    def test_regression_subsequent_polling_xpath_query_no_duplicates(self) -> None:
+        """Regression Test: Subsequent polling (last_record_id > 0) uses XPath filter and preserves order without duplicate emission."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader.last_record_id = 98765
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = SAMPLE_PROCESS_CREATE_XML  # RecordID 98766
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            events = reader.read_new_events()
+
+            # Verify subprocess call used XPath query with /rd:false
+            called_cmd = mock_run.call_args[0][0]
+            assert "/q:*[System[EventRecordID > 98765]]" in called_cmd
+            assert "/rd:false" in called_cmd
+
+        assert len(events) == 1
+        assert events[0].record_id == 98766
+        assert reader.last_record_id == 98766
+
+    def test_regression_interleaved_failed_normalization_checkpoint_intact(self) -> None:
+        """Regression Test: Interleaved normalization failure in a batch skips corrupt record without breaking cursor on valid records."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader.last_record_id = 9000
+
+        # Batch: 9001 (valid), invalid XML (9999), 9002 (valid)
+        valid_9001 = SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", "<EventRecordID>9001</EventRecordID>")
+        valid_9002 = SAMPLE_PROCESS_CREATE_XML.replace("<EventRecordID>98766</EventRecordID>", "<EventRecordID>9002</EventRecordID>")
+
+        reader._query_windows_security_log = MagicMock(return_value=[valid_9001, SAMPLE_INVALID_XML, valid_9002])
+        events = reader.read_new_events()
+
+        assert len(events) == 2
+        assert [e.record_id for e in events] == [9001, 9002]
+        assert reader.validation_failures == 1
+        assert reader.last_record_id == 9002
+
+    def test_regression_specific_descending_batch_105_to_101(self) -> None:
+        """Regression Test: Input batch [105, 104, 103, 102, 101] with initial checkpoint 0 ingests all 5 events in ascending order."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        assert reader.last_record_id == 0
+
+        # Construct raw wevtutil output in descending order: 105, 104, 103, 102, 101
+        xml_chunks = [
+            SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>")
+            for rid in (105, 104, 103, 102, 101)
+        ]
+        raw_stdout = "\n".join(xml_chunks)
+
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = raw_stdout
+
+        with patch("subprocess.run", return_value=mock_result):
+            events = reader.read_new_events()
+
+        assert len(events) == 5
+        assert [e.record_id for e in events] == [101, 102, 103, 104, 105]
+        assert reader.last_record_id == 105
+
     def test_graceful_shutdown_works(self) -> None:
         """8. Graceful shutdown works during continuous stream_events generation."""
         reader = LiveWindowsEventReader(channel="Security")
