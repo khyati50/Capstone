@@ -195,6 +195,28 @@ class TestLiveEventHandoffEngine:
         assert stats["dropped_count"] == 0
         assert "active_consumers" in stats
 
+    def test_failed_downstream_handoff_does_not_corrupt_checkpoint(self) -> None:
+        """A failed downstream consumer handoff does not corrupt or roll back reader checkpoint."""
+        from ai.collection.live_reader import LiveWindowsEventReader
+
+        reader = LiveWindowsEventReader(channel="Security")
+        reader.last_record_id = 1000
+
+        engine = LiveEventHandoffEngine()
+
+        def _crashing_consumer(evt: WindowsEventSchema) -> bool:
+            raise ValueError("Downstream processing failure")
+
+        engine.register_callback(_crashing_consumer, name="crash_consumer")
+        evt = _make_event(record_id=1005)
+
+        engine.submit_event(evt)
+        engine.process_next_event()
+
+        # Checkpoint on reader remains intact at 1000 (uncorrupted)
+        assert reader.last_record_id == 1000
+        assert engine.delivery_failures == 1
+
     def test_package_exports(self) -> None:
         """Handoff components are exportable from ai.collection."""
         from ai.collection import LiveEventHandoffEngine as Engine, EventConsumer as Consumer
