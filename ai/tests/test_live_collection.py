@@ -231,6 +231,26 @@ class TestLiveWindowsEventReader:
         assert len(events) == 2
         assert reader.last_record_id == 98766  # Advanced to highest valid RecordID
 
+    def test_initial_batch_reverses_descending_wevtutil_records(self) -> None:
+        """Initial query with last_record_id==0 reverses /rd:true output so all initial records process in ascending order."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+
+        # Raw wevtutil stdout in descending order (98766 then 98765)
+        raw_stdout = f"{SAMPLE_PROCESS_CREATE_XML}\n{SAMPLE_FAILED_LOGON_XML}"
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = raw_stdout
+
+        with patch("subprocess.run", return_value=mock_result):
+            events = reader.read_new_events()
+
+        assert len(events) == 2
+        # Records must be processed in ascending order: 98765 first, then 98766
+        assert events[0].record_id == 98765
+        assert events[1].record_id == 98766
+        assert reader.last_record_id == 98766
+
     def test_checkpoint_does_not_advance_on_normalization_failure(self) -> None:
         """7. Checkpoint does NOT incorrectly advance on normalization/validation failure."""
         reader = LiveWindowsEventReader(channel="Security")

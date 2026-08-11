@@ -189,7 +189,12 @@ class LiveWindowsEventReader:
                 logger.warning(f"wevtutil returned code {result.returncode}: {result.stderr.strip()}")
                 return []
 
-            return self._split_xml_events(result.stdout)
+            events = self._split_xml_events(result.stdout)
+            # When initial query uses /rd:true (descending), reverse so records process in ascending chronological order
+            if self.last_record_id == 0:
+                events.reverse()
+
+            return events
         except subprocess.TimeoutExpired:
             logger.error("Timeout querying Windows Security Event Log via wevtutil.")
             return []
