@@ -18,7 +18,6 @@ from pathlib import Path
 from ai.collection.evtx_collector import WindowsEventCollector
 from ai.config import DATASET_ROOT
 
-
 # ------------------------------------------------------------------------------
 # ASCII-safe output helpers (Windows cp1252 compatible)
 # ------------------------------------------------------------------------------
@@ -123,9 +122,7 @@ def run_demo(collector: WindowsEventCollector) -> None:
         },
     ]
 
-    with tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False, encoding="utf-8", prefix="demo_"
-    ) as fh:
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8", prefix="demo_") as fh:
         json.dump(samples, fh)
         tmp = Path(fh.name)
 
