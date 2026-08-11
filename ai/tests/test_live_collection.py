@@ -329,6 +329,25 @@ class TestLiveWindowsEventReader:
         assert [e.record_id for e in events] == [101, 102, 103, 104, 105]
         assert reader.last_record_id == 105
 
+    def test_regression_existing_checkpoint_103_filters_old_records(self) -> None:
+        """Regression Test: Existing checkpoint=103 filters out records <= 103, accepting only [104, 105] in order with final checkpoint=105."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader.last_record_id = 103  # Preset existing checkpoint
+
+        # Construct raw payload containing records 101 through 105 in ascending order
+        xml_chunks = [
+            SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>")
+            for rid in (101, 102, 103, 104, 105)
+        ]
+
+        reader._query_windows_security_log = MagicMock(return_value=xml_chunks)
+        events = reader.read_new_events()
+
+        assert len(events) == 2
+        assert [e.record_id for e in events] == [104, 105]
+        assert reader.last_record_id == 105
+
     def test_graceful_shutdown_works(self) -> None:
         """8. Graceful shutdown works during continuous stream_events generation."""
         reader = LiveWindowsEventReader(channel="Security")
