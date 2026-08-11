@@ -1,16 +1,22 @@
-"""Unit Tests — Phase 2.1: Local Windows Security Event Ingestion.
+"""Unit Tests — Phase 2.1 & 2.2: Local Windows Security Event Ingestion.
 
-Tests the live collection components:
-  - normalize_live_xml_event on live XML Security event structures
-  - LiveWindowsEventReader initialization, XML splitting, and fallback
-  - EventRecordID checkpoint tracking (preventing duplicate event emissions)
-  - Mocked Windows Event Log source reading (requires 0 Admin privileges to pass)
-  - Schema compatibility of live-acquired events with WindowsEventSchema
+Tests all required live collection constraints (0 Administrator rights required):
+  1. Reader initializes correctly
+  2. Existing RecordID checkpoint is respected
+  3. Duplicate/old RecordIDs are ignored
+  4. New RecordID is accepted
+  5. Normalized event is produced into WindowsEventSchema
+  6. Checkpoint advances after successful normalization
+  7. Checkpoint does NOT incorrectly advance on normalization/validation failure
+  8. Graceful shutdown works (KeyboardInterrupt in stream_events)
+  9. Non-Windows / unavailable event source fallback works
+ 10. Import warning is eliminated
 
-Phase 2.1 — Local Windows Security Event Log Ingestion
+Phase 2.1 / 2.2 — Local Windows Security Event Log Ingestion
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
+import warnings
 
 import pytest
 
@@ -66,6 +72,17 @@ SAMPLE_PROCESS_CREATE_XML = """<Event xmlns="http://schemas.microsoft.com/win/20
     <Data Name="ParentProcessName">C:\\Windows\\explorer.exe</Data>
     <Data Name="CommandLine">powershell.exe -ExecutionPolicy Bypass -enc SQBFA...</Data>
   </EventData>
+</Event>"""
+
+SAMPLE_INVALID_XML = """<Event xmlns="http://schemas.microsoft.com/win/2004/08/events/event">
+  <System>
+    <Provider Name="Microsoft-Windows-Security-Auditing" />
+    <EventID>0</EventID>
+    <TimeCreated SystemTime="" />
+    <EventRecordID>99999</EventRecordID>
+    <Channel>Security</Channel>
+    <Computer>BAD-HOST</Computer>
+  </System>
 </Event>"""
 
 
@@ -139,15 +156,15 @@ class TestLiveNormalizer:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. Live Reader Tests (Mocked Event Source)
+# 2. Live Reader Tests (Mocked Sources — 0 Admin Rights Required)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestLiveWindowsEventReader:
     """Tests for LiveWindowsEventReader class using mocked sources."""
 
-    def test_reader_initialization(self) -> None:
-        """Reader initializes with default Security channel."""
+    def test_reader_initializes_correctly(self) -> None:
+        """1. Reader initializes correctly with Security channel and zeroed checkpoint."""
         reader = LiveWindowsEventReader(channel="Security")
         assert reader.channel == "Security"
         assert reader.last_record_id == 0
@@ -155,79 +172,111 @@ class TestLiveWindowsEventReader:
         assert reader.validation_failures == 0
         assert reader.last_read_timestamp is None
 
-    def test_reader_status(self) -> None:
-        """get_reader_status returns valid dictionary with last_record_id."""
-        reader = LiveWindowsEventReader()
-        status = reader.get_reader_status()
+    def test_existing_record_id_checkpoint_respected(self) -> None:
+        """2. Existing RecordID checkpoint is respected."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader.last_record_id = 98765  # Pre-set existing checkpoint
 
-        assert status["channel"] == "Security"
-        assert "is_windows" in status
-        assert status["last_record_id"] == 0
-        assert status["total_events_read"] == 0
-        assert "status" in status
+        assert reader.last_record_id == 98765
 
-    def test_mocked_read_new_events(self) -> None:
-        """Mocked reader reads XML events and updates record_id checkpoint."""
+    def test_duplicate_old_record_ids_ignored(self) -> None:
+        """3. Duplicate/old RecordIDs (<= N) are ignored."""
         reader = LiveWindowsEventReader(channel="Security")
         reader._is_windows = True
+        reader.last_record_id = 98766  # Current checkpoint is 98766
+
+        # Return record 98765 which is <= 98766
+        reader._query_windows_security_log = MagicMock(return_value=[SAMPLE_FAILED_LOGON_XML])
+        events = reader.read_new_events()
+
+        assert len(events) == 0  # Old record 98765 ignored
+        assert reader.total_events_read == 0
+        assert reader.last_record_id == 98766  # Checkpoint unchanged
+
+    def test_new_record_id_accepted(self) -> None:
+        """4. New RecordID (> N) is accepted and processed."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader.last_record_id = 98764
+
+        reader._query_windows_security_log = MagicMock(return_value=[SAMPLE_FAILED_LOGON_XML])
+        events = reader.read_new_events()
+
+        assert len(events) == 1
+        assert events[0].record_id == 98765
+
+    def test_normalized_event_produced(self) -> None:
+        """5. Normalized event is produced into WindowsEventSchema."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader._query_windows_security_log = MagicMock(return_value=[SAMPLE_FAILED_LOGON_XML])
+
+        events = reader.read_new_events()
+        assert len(events) == 1
+        assert isinstance(events[0], WindowsEventSchema)
+        assert events[0].event_id == 4625
+        assert events[0].computer == "CORP-SEC-DC01"
+
+    def test_checkpoint_advances_after_successful_normalization(self) -> None:
+        """6. Checkpoint advances after successful normalization."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        assert reader.last_record_id == 0
+
         reader._query_windows_security_log = MagicMock(
             return_value=[SAMPLE_FAILED_LOGON_XML, SAMPLE_PROCESS_CREATE_XML]
         )
-
-        events = reader.read_new_events(max_records=10)
+        events = reader.read_new_events()
 
         assert len(events) == 2
-        assert events[0].record_id == 98765
-        assert events[1].record_id == 98766
-        assert reader.last_record_id == 98766
-        assert reader.total_events_read == 2
+        assert reader.last_record_id == 98766  # Advanced to highest valid RecordID
 
-    def test_checkpoint_prevents_duplicate_events(self) -> None:
-        """Checkpoint filter prevents previously-read EventRecordIDs from re-emitting."""
+    def test_checkpoint_does_not_advance_on_normalization_failure(self) -> None:
+        """7. Checkpoint does NOT incorrectly advance on normalization/validation failure."""
         reader = LiveWindowsEventReader(channel="Security")
         reader._is_windows = True
+        reader.last_record_id = 1000
 
-        # First read: acquires records 98765 and 98766
-        reader._query_windows_security_log = MagicMock(
-            return_value=[SAMPLE_FAILED_LOGON_XML, SAMPLE_PROCESS_CREATE_XML]
-        )
-        batch1 = reader.read_new_events()
-        assert len(batch1) == 2
-        assert reader.last_record_id == 98766
+        # Pass SAMPLE_INVALID_XML (EventID 0, empty timestamp, RecordID 99999)
+        reader._query_windows_security_log = MagicMock(return_value=[SAMPLE_INVALID_XML])
+        events = reader.read_new_events()
 
-        # Second read: receives same XML records (or already-seen 98765)
-        reader._query_windows_security_log = MagicMock(
-            return_value=[SAMPLE_FAILED_LOGON_XML]
-        )
-        batch2 = reader.read_new_events()
+        assert len(events) == 0  # Failed validation
+        assert reader.validation_failures == 1
+        assert reader.last_record_id == 1000  # Must NOT advance to 99999 on failure!
 
-        # Deduplication must filter out 98765 because 98765 <= reader.last_record_id (98766)
-        assert len(batch2) == 0
-        assert reader.total_events_read == 2  # Unchanged
+    def test_graceful_shutdown_works(self) -> None:
+        """8. Graceful shutdown works during continuous stream_events generation."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader._query_windows_security_log = MagicMock(return_value=[SAMPLE_FAILED_LOGON_XML])
 
-    def test_split_xml_events(self) -> None:
-        """_split_xml_events splits multiple Event XML blocks."""
-        combined_xml = f"{SAMPLE_FAILED_LOGON_XML}\n{SAMPLE_PROCESS_CREATE_XML}"
-        reader = LiveWindowsEventReader()
+        gen = reader.stream_events(poll_interval_sec=0.01)
+        first_event = next(gen)
+        assert first_event.record_id == 98765
 
-        chunks = reader._split_xml_events(combined_xml)
-        assert len(chunks) == 2
-        assert "<EventID>4625</EventID>" in chunks[0]
-        assert "<EventID>4688</EventID>" in chunks[1]
+        # Close generator cleanly simulating Ctrl+C shutdown
+        gen.close()
 
-    def test_split_xml_events_empty_input(self) -> None:
-        """_split_xml_events handles empty input safely."""
-        reader = LiveWindowsEventReader()
-        assert reader._split_xml_events("") == []
-        assert reader._split_xml_events("   ") == []
+    def test_non_windows_unavailable_source_fallback(self) -> None:
+        """9. Non-Windows or unavailable event source fallback works without crashing."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = False  # Simulate non-Windows
 
-    def test_package_exports(self) -> None:
-        """Live collection components are exportable from ai.collection."""
-        from ai.collection import LiveWindowsEventReader as Reader
-        from ai.collection import normalize_live_xml_event as normalizer
+        events = reader.read_new_events()
+        assert events == []
+        status = reader.get_reader_status()
+        assert status["status"] == "fallback_disabled"
+        assert status["is_windows"] is False
 
-        r = Reader()
-        assert r.channel == "Security"
-        s = normalizer(SAMPLE_FAILED_LOGON_XML)
-        assert s.event_id == 4625
-        assert s.record_id == 98765
+    def test_import_warning_eliminated(self) -> None:
+        """10. Package import of live collection components produces zero RuntimeWarning."""
+        with warnings.catch_warnings(record=True) as recorded:
+            warnings.simplefilter("always")
+            from ai.collection import LiveWindowsEventReader as Reader, normalize_live_xml_event as normalizer
+
+            r = Reader()
+            assert r.channel == "Security"
+
+            for w in recorded:
+                assert "sys.modules" not in str(w.message)

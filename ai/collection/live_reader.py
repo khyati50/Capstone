@@ -11,7 +11,8 @@ Phase 2.1 — Windows Real-Time Local Security Event Ingestion
 import logging
 import platform
 import subprocess
-from typing import Any, Dict, List, Optional
+import time
+from typing import Any, Dict, Generator, List, Optional
 
 from ai.collection.live_normalizer import normalize_live_xml_event
 from ai.collection.schema import WindowsEventSchema
@@ -80,17 +81,18 @@ class LiveWindowsEventReader:
         for xml_str in xml_records:
             schema = normalize_live_xml_event(xml_str, source_channel=self.channel)
 
-            # Validate basic event schema requirement
-            if schema.event_id <= 0 or not schema.timestamp:
-                self.validation_failures += 1
-                continue
-
             # Checkpoint filter: Skip already-processed records using EventRecordID
             if schema.record_id > 0 and schema.record_id <= self.last_record_id:
                 logger.debug(f"Skipping already-processed EventRecordID {schema.record_id}")
                 continue
 
-            # Update checkpoint cursor
+            # Validate basic event schema requirement
+            if schema.event_id <= 0 or not schema.timestamp:
+                self.validation_failures += 1
+                # Checkpoint MUST NOT advance on normalization/validation failure
+                continue
+
+            # Update checkpoint cursor ONLY after successful normalization & validation
             if schema.record_id > 0:
                 self.last_record_id = max(self.last_record_id, schema.record_id)
             if schema.timestamp:
@@ -100,6 +102,33 @@ class LiveWindowsEventReader:
             events.append(schema)
 
         return events
+
+    def stream_events(
+        self,
+        poll_interval_sec: float = 1.0,
+        batch_size: int = 50,
+    ) -> Generator[WindowsEventSchema, None, None]:
+        """Yield new WindowsEventSchema records continuously as a Generator.
+
+        Waits for new records without busy-looping aggressively or rescanning
+        the same records. Handles Ctrl+C (KeyboardInterrupt) gracefully.
+
+        Args:
+            poll_interval_sec: Polling interval in seconds.
+            batch_size: Maximum records to fetch per tick.
+
+        Yields:
+            Normalized WindowsEventSchema records.
+        """
+        logger.info(f"Starting continuous stream_events for local channel '{self.channel}'...")
+        try:
+            while True:
+                events = self.read_new_events(max_records=batch_size)
+                for event in events:
+                    yield event
+                time.sleep(poll_interval_sec)
+        except (KeyboardInterrupt, SystemExit):
+            logger.info("Continuous stream_events interrupted by user shutdown.")
 
     def get_reader_status(self) -> Dict[str, Any]:
         """Return reader operational health and acquisition statistics.
@@ -124,7 +153,7 @@ class LiveWindowsEventReader:
     def _query_windows_security_log(self, max_records: int = 50) -> List[str]:
         """Execute a Windows Event Query for the local Security channel.
 
-        Uses native wevtutil structured XML query output or ctypes fallback.
+        Uses structured XPath EventRecordID filtering when a checkpoint exists.
 
         Args:
             max_records: Maximum number of recent events to retrieve.
@@ -132,17 +161,15 @@ class LiveWindowsEventReader:
         Returns:
             List of raw event XML strings.
         """
-        cmd = [
-            "wevtutil.exe",
-            "qe",
-            self.channel,
-            f"/c:{max_records}",
-            "/rd:true",
-            "/f:xml",
-        ]
+        cmd = ["wevtutil.exe", "qe", self.channel]
+
+        if self.last_record_id > 0:
+            xpath_query = f"*[System[EventRecordID > {self.last_record_id}]]"
+            cmd.extend([f"/q:{xpath_query}", f"/c:{max_records}", "/rd:false", "/f:xml"])
+        else:
+            cmd.extend([f"/c:{max_records}", "/rd:true", "/f:xml"])
 
         try:
-            # Hide console window on Windows when executing subprocess
             startupinfo = None
             if hasattr(subprocess, "STARTUPINFO"):
                 startupinfo = subprocess.STARTUPINFO()
@@ -185,7 +212,6 @@ class LiveWindowsEventReader:
         if not raw_stdout or not raw_stdout.strip():
             return []
 
-        # Windows Event Log XML outputs multiple <Event xmlns="..."> blocks
         event_chunks: List[str] = []
         raw_chunks = raw_stdout.split("</Event>")
 

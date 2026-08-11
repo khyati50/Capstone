@@ -1,6 +1,9 @@
 """ai.collection — Windows Event Collector Foundation Package.
 
-Phase 1, 2.1 & 2.2 Exports:
+Module-level exports for Phase 1, Phase 2.1, and Phase 2.2 using lazy imports
+to prevent sys.modules conflicts when running CLI submodules.
+
+Exports:
   - WindowsEventSchema        : Canonical internal event representation
   - WindowsEventCollector     : Primary batch ingestion engine (JSON & EVTX files)
   - LiveWindowsEventReader    : Local Windows Security Event Log acquisition engine
@@ -18,11 +21,6 @@ from ai.collection.schema import (
     MONITORED_EVENT_IDS,
     LOG_CHANNELS,
 )
-from ai.collection.normalizer import normalize_json_event, normalize_evtx_record
-from ai.collection.evtx_collector import WindowsEventCollector
-from ai.collection.live_normalizer import normalize_live_xml_event
-from ai.collection.live_reader import LiveWindowsEventReader
-from ai.collection.live_monitor import LocalSecurityLogMonitor
 
 __all__ = [
     "WindowsEventSchema",
@@ -36,3 +34,28 @@ __all__ = [
     "MONITORED_EVENT_IDS",
     "LOG_CHANNELS",
 ]
+
+
+def __getattr__(name: str):
+    """Lazy module-level export resolver preventing pre-import RuntimeWarnings."""
+    if name == "WindowsEventCollector":
+        from ai.collection.evtx_collector import WindowsEventCollector
+
+        return WindowsEventCollector
+    elif name in ("normalize_json_event", "normalize_evtx_record"):
+        from ai.collection.normalizer import normalize_json_event, normalize_evtx_record
+
+        return normalize_json_event if name == "normalize_json_event" else normalize_evtx_record
+    elif name == "normalize_live_xml_event":
+        from ai.collection.live_normalizer import normalize_live_xml_event
+
+        return normalize_live_xml_event
+    elif name == "LiveWindowsEventReader":
+        from ai.collection.live_reader import LiveWindowsEventReader
+
+        return LiveWindowsEventReader
+    elif name == "LocalSecurityLogMonitor":
+        from ai.collection.live_monitor import LocalSecurityLogMonitor
+
+        return LocalSecurityLogMonitor
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
