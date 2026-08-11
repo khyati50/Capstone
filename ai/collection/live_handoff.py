@@ -15,7 +15,7 @@ from collections import deque
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, List, Optional
 import uuid
 
 from ai.collection.schema import WindowsEventSchema
@@ -68,6 +68,40 @@ class FunctionEventConsumer(EventConsumer):
         except Exception as exc:
             logger.error(f"Consumer '{self.consumer_id}' callback error: {exc}")
             return False
+
+
+class MinimalTestConsumer(EventConsumer):
+    """Minimal verification consumer that records and prints received events in order."""
+
+    def __init__(self, consumer_id: str = "minimal_test_consumer") -> None:
+        """Initialize MinimalTestConsumer.
+
+        Args:
+            consumer_id: Optional string consumer ID.
+        """
+        super().__init__(consumer_id=consumer_id)
+        self.received_events: List[WindowsEventSchema] = []
+        self._lock = threading.Lock()
+
+    def consume_event(self, event: WindowsEventSchema) -> bool:
+        """Record received WindowsEventSchema in order."""
+        with self._lock:
+            self.received_events.append(event)
+        logger.info(f"[Handoff Consumer] Received RecordID={event.record_id} EventID={event.event_id}")
+        return True
+
+    def get_received_record_ids(self) -> List[int]:
+        """Return list of received EventRecordIDs in order."""
+        with self._lock:
+            return [e.record_id for e in self.received_events]
+
+    def print_summary(self) -> None:
+        """Print summary of received events to stdout."""
+        with self._lock:
+            print(f"--- MinimalTestConsumer ({self.consumer_id}) Summary ---")
+            print(f"Total Events Received: {len(self.received_events)}")
+            for i, evt in enumerate(self.received_events, 1):
+                print(f"  [{i}] RecordID={evt.record_id:<8} EventID={evt.event_id:<6} Computer={evt.computer}")
 
 
 class LiveEventHandoffEngine:
@@ -234,11 +268,15 @@ class LiveEventHandoffEngine:
         logger.info("LiveEventHandoffEngine started background worker thread.")
 
     def stop_handoff(self, timeout: float = 2.0) -> None:
-        """Stop background handoff worker thread.
+        """Stop background handoff worker thread after draining queued events.
 
         Args:
             timeout: Maximum seconds to wait for worker thread join.
         """
+        # Drain remaining queued events prior to shutdown to prevent event loss
+        while self.process_next_event():
+            pass
+
         with self._lock:
             if not self._is_running:
                 return

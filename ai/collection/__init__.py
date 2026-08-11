@@ -64,13 +64,20 @@ def __getattr__(name: str):
         from ai.collection.live_monitor import LocalSecurityLogMonitor
 
         return LocalSecurityLogMonitor
-    elif name in ("LiveEventHandoffEngine", "EventConsumer", "FunctionEventConsumer"):
-        from ai.collection.live_handoff import LiveEventHandoffEngine, EventConsumer, FunctionEventConsumer
+    elif name in ("LiveEventHandoffEngine", "EventConsumer", "FunctionEventConsumer", "MinimalTestConsumer"):
+        from ai.collection.live_handoff import (
+            LiveEventHandoffEngine,
+            EventConsumer,
+            FunctionEventConsumer,
+            MinimalTestConsumer,
+        )
 
         if name == "LiveEventHandoffEngine":
             return LiveEventHandoffEngine
         elif name == "EventConsumer":
             return EventConsumer
-        else:
+        elif name == "FunctionEventConsumer":
             return FunctionEventConsumer
+        else:
+            return MinimalTestConsumer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

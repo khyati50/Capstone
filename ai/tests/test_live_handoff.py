@@ -217,6 +217,50 @@ class TestLiveEventHandoffEngine:
         assert reader.last_record_id == 1000
         assert engine.delivery_failures == 1
 
+
+    def test_minimal_test_consumer_receives_multiple_events_in_order(self) -> None:
+        """MinimalTestConsumer receives and records multiple events in exact sequential order."""
+        from ai.collection import MinimalTestConsumer
+
+        engine = LiveEventHandoffEngine(max_queue_size=50)
+        consumer = MinimalTestConsumer(consumer_id="verify_consumer")
+        engine.register_consumer(consumer)
+
+        events = [
+            _make_event(event_id=4625, record_id=101),
+            _make_event(event_id=4688, record_id=102),
+            _make_event(event_id=4672, record_id=103),
+            _make_event(event_id=4720, record_id=104),
+        ]
+
+        for evt in events:
+            engine.submit_event(evt)
+
+        # Process all submitted events
+        while engine.process_next_event():
+            pass
+
+        assert consumer.get_received_record_ids() == [101, 102, 103, 104]
+        assert len(consumer.received_events) == 4
+        consumer.print_summary()
+
+    def test_shutdown_does_not_lose_accepted_events(self) -> None:
+        """Shutdown of background worker delivers already accepted events."""
+        engine = LiveEventHandoffEngine(max_queue_size=50)
+        stub = StubConsumer()
+        engine.register_consumer(stub)
+
+        engine.submit_event(_make_event(record_id=501))
+        engine.submit_event(_make_event(record_id=502))
+
+        # Start worker and immediately stop
+        engine.start_handoff()
+        engine.stop_handoff(timeout=2.0)
+
+        # Ensure all queued events were delivered prior to shutdown
+        assert len(stub.received_events) == 2
+        assert [e.record_id for e in stub.received_events] == [501, 502]
+
     def test_package_exports(self) -> None:
         """Handoff components are exportable from ai.collection."""
         from ai.collection import LiveEventHandoffEngine as Engine, EventConsumer as Consumer
