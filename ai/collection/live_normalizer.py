@@ -120,8 +120,16 @@ def normalize_live_xml_event(
     logon_raw = data_map.get("LogonType", "0")
     logon_type = int(logon_raw) if logon_raw.isdigit() else 0
 
+    # Extract EventRecordID (unique record identity in Windows Event Log)
+    raw_rec_id = _find_system("EventRecordID")
+    try:
+        record_id = int(raw_rec_id) if raw_rec_id else 0
+    except ValueError:
+        record_id = 0
+
     raw_dict: Dict[str, Any] = {
         "event_id": event_id,
+        "record_id": record_id,
         "timestamp": timestamp,
         "computer": computer,
         "_raw_xml": xml_str,
@@ -143,5 +151,6 @@ def normalize_live_xml_event(
         logon_type=logon_type,
         scenario_id="live_security_log",
         category="local_security_event",
+        record_id=record_id,
         raw=raw_dict,
     )

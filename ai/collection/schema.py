@@ -82,6 +82,7 @@ class WindowsEventSchema:
     logon_type: int = 0
     scenario_id: str = ""
     category: str = ""
+    record_id: int = 0
     raw: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -93,6 +94,8 @@ class WindowsEventSchema:
         return {
             "event_id": self.event_id,
             "EventID": self.event_id,
+            "record_id": self.record_id,
+            "EventRecordID": self.record_id,
             "timestamp": self.timestamp,
             "TimeCreated": self.timestamp,
             "provider_name": self.provider_name,

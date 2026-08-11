@@ -3,10 +3,14 @@
 Tests the live collection components:
   - normalize_live_xml_event on live XML Security event structures
   - LiveWindowsEventReader initialization, XML splitting, and fallback
+  - EventRecordID checkpoint tracking (preventing duplicate event emissions)
+  - Mocked Windows Event Log source reading (requires 0 Admin privileges to pass)
   - Schema compatibility of live-acquired events with WindowsEventSchema
 
 Phase 2.1 — Local Windows Security Event Log Ingestion
 """
+
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -52,6 +56,7 @@ SAMPLE_PROCESS_CREATE_XML = """<Event xmlns="http://schemas.microsoft.com/win/20
     <Provider Name="Microsoft-Windows-Security-Auditing" />
     <EventID>4688</EventID>
     <TimeCreated SystemTime="2026-08-11T10:01:15.0000000Z" />
+    <EventRecordID>98766</EventRecordID>
     <Channel>Security</Channel>
     <Computer>WORKSTATION-99</Computer>
   </System>
@@ -78,6 +83,7 @@ class TestLiveNormalizer:
 
         assert isinstance(schema, WindowsEventSchema)
         assert schema.event_id == 4625
+        assert schema.record_id == 98765
         assert schema.computer == "CORP-SEC-DC01"
         assert schema.channel == "Security"
         assert schema.target_user == "administrator"
@@ -88,10 +94,11 @@ class TestLiveNormalizer:
         assert schema.provider_name == "Microsoft-Windows-Security-Auditing"
 
     def test_normalize_process_create_xml(self) -> None:
-        """Correctly extracts process and command line fields from Event 4688 XML."""
+        """Correctly extracts process, command line, and record_id from Event 4688 XML."""
         schema = normalize_live_xml_event(SAMPLE_PROCESS_CREATE_XML, source_channel="Security")
 
         assert schema.event_id == 4688
+        assert schema.record_id == 98766
         assert schema.computer == "WORKSTATION-99"
         assert schema.subject_user == "jdoe"
         assert "powershell.exe" in schema.process_name
@@ -102,56 +109,101 @@ class TestLiveNormalizer:
         """Empty XML string produces safe default schema."""
         schema = normalize_live_xml_event("")
         assert schema.event_id == 0
+        assert schema.record_id == 0
         assert schema.channel == "Security"
 
     def test_normalize_malformed_xml(self) -> None:
         """Malformed XML produces schema with error in raw dict."""
         schema = normalize_live_xml_event("<Event><bad xml")
         assert schema.event_id == 0
+        assert schema.record_id == 0
         assert "_xml_error" in schema.raw
 
     def test_schema_monitored_event_check(self) -> None:
-        """Normalized live event correct identifies monitored status."""
+        """Normalized live event correctly identifies monitored status."""
         schema = normalize_live_xml_event(SAMPLE_FAILED_LOGON_XML)
         assert schema.is_monitored_event() is True
 
     def test_schema_to_dict_compatibility(self) -> None:
-        """Normalized live event produces dictionary matching Phase 1 format."""
+        """Normalized live event produces dictionary matching Phase 1 format including EventRecordID."""
         schema = normalize_live_xml_event(SAMPLE_FAILED_LOGON_XML)
         d = schema.to_dict()
 
         assert d["EventID"] == 4625
         assert d["event_id"] == 4625
+        assert d["EventRecordID"] == 98765
+        assert d["record_id"] == 98765
         assert d["Computer"] == "CORP-SEC-DC01"
         assert d["TargetUserName"] == "administrator"
         assert d["LogonType"] == 3
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 2. Live Reader Tests
+# 2. Live Reader Tests (Mocked Event Source)
 # ─────────────────────────────────────────────────────────────────────────────
 
 
 class TestLiveWindowsEventReader:
-    """Tests for LiveWindowsEventReader class."""
+    """Tests for LiveWindowsEventReader class using mocked sources."""
 
     def test_reader_initialization(self) -> None:
         """Reader initializes with default Security channel."""
         reader = LiveWindowsEventReader(channel="Security")
         assert reader.channel == "Security"
+        assert reader.last_record_id == 0
         assert reader.total_events_read == 0
         assert reader.validation_failures == 0
         assert reader.last_read_timestamp is None
 
     def test_reader_status(self) -> None:
-        """get_reader_status returns valid dictionary."""
+        """get_reader_status returns valid dictionary with last_record_id."""
         reader = LiveWindowsEventReader()
         status = reader.get_reader_status()
 
         assert status["channel"] == "Security"
         assert "is_windows" in status
+        assert status["last_record_id"] == 0
         assert status["total_events_read"] == 0
         assert "status" in status
+
+    def test_mocked_read_new_events(self) -> None:
+        """Mocked reader reads XML events and updates record_id checkpoint."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+        reader._query_windows_security_log = MagicMock(
+            return_value=[SAMPLE_FAILED_LOGON_XML, SAMPLE_PROCESS_CREATE_XML]
+        )
+
+        events = reader.read_new_events(max_records=10)
+
+        assert len(events) == 2
+        assert events[0].record_id == 98765
+        assert events[1].record_id == 98766
+        assert reader.last_record_id == 98766
+        assert reader.total_events_read == 2
+
+    def test_checkpoint_prevents_duplicate_events(self) -> None:
+        """Checkpoint filter prevents previously-read EventRecordIDs from re-emitting."""
+        reader = LiveWindowsEventReader(channel="Security")
+        reader._is_windows = True
+
+        # First read: acquires records 98765 and 98766
+        reader._query_windows_security_log = MagicMock(
+            return_value=[SAMPLE_FAILED_LOGON_XML, SAMPLE_PROCESS_CREATE_XML]
+        )
+        batch1 = reader.read_new_events()
+        assert len(batch1) == 2
+        assert reader.last_record_id == 98766
+
+        # Second read: receives same XML records (or already-seen 98765)
+        reader._query_windows_security_log = MagicMock(
+            return_value=[SAMPLE_FAILED_LOGON_XML]
+        )
+        batch2 = reader.read_new_events()
+
+        # Deduplication must filter out 98765 because 98765 <= reader.last_record_id (98766)
+        assert len(batch2) == 0
+        assert reader.total_events_read == 2  # Unchanged
 
     def test_split_xml_events(self) -> None:
         """_split_xml_events splits multiple Event XML blocks."""
@@ -178,3 +230,4 @@ class TestLiveWindowsEventReader:
         assert r.channel == "Security"
         s = normalizer(SAMPLE_FAILED_LOGON_XML)
         assert s.event_id == 4625
+        assert s.record_id == 98765

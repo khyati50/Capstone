@@ -2,8 +2,8 @@
 
 Provides the LiveWindowsEventReader class for reading unread records from the
 local Windows Security Event Log channel ('Security'). Maintains read pointers,
-normalizes records to WindowsEventSchema via live_normalizer, and provides
-graceful non-Windows / unprivileged fallback handling.
+checkpointing by EventRecordID, normalizes records to WindowsEventSchema via
+live_normalizer, and provides graceful non-Windows / unprivileged fallback handling.
 
 Phase 2.1 — Windows Real-Time Local Security Event Ingestion
 """
@@ -23,11 +23,12 @@ class LiveWindowsEventReader:
     """Acquires live event records from the local Windows Security Event Log.
 
     Scoped strictly to the local 'Security' Event Log channel. Maintains an
-    internal bookmark (last read record time / query cursor) to ensure new events
-    are read without duplicates.
+    internal checkpoint (last_record_id / last_read_timestamp) to ensure new events
+    are read without re-emitting already-processed records.
 
     Attributes:
         channel: Windows Event Log channel (fixed to 'Security').
+        last_record_id: Highest EventRecordID integer read so far (checkpoint cursor).
         last_read_timestamp: SystemTime string of the most recent event read.
         total_events_read: Lifetime count of events acquired.
         validation_failures: Count of records that failed schema validation.
@@ -40,6 +41,7 @@ class LiveWindowsEventReader:
             channel: Target Windows Event Log channel name. Defaults to 'Security'.
         """
         self.channel = channel
+        self.last_record_id: int = 0
         self.last_read_timestamp: Optional[str] = None
         self.total_events_read: int = 0
         self.validation_failures: int = 0
@@ -57,7 +59,8 @@ class LiveWindowsEventReader:
         """Read newly appended records from the local Security Event Log.
 
         Queries the local Windows Security Event Log for new records created since
-        the last read cursor. Normalizes all records to WindowsEventSchema.
+        the last read cursor. Checkpoint tracking via EventRecordID prevents
+        already-processed events from being emitted again.
 
         Args:
             max_records: Maximum number of records to fetch in this batch.
@@ -82,7 +85,14 @@ class LiveWindowsEventReader:
                 self.validation_failures += 1
                 continue
 
-            # Update last read timestamp bookmark
+            # Checkpoint filter: Skip already-processed records using EventRecordID
+            if schema.record_id > 0 and schema.record_id <= self.last_record_id:
+                logger.debug(f"Skipping already-processed EventRecordID {schema.record_id}")
+                continue
+
+            # Update checkpoint cursor
+            if schema.record_id > 0:
+                self.last_record_id = max(self.last_record_id, schema.record_id)
             if schema.timestamp:
                 self.last_read_timestamp = schema.timestamp
 
@@ -100,9 +110,10 @@ class LiveWindowsEventReader:
         return {
             "channel": self.channel,
             "is_windows": self._is_windows,
+            "last_record_id": self.last_record_id,
+            "last_read_timestamp": self.last_read_timestamp,
             "total_events_read": self.total_events_read,
             "validation_failures": self.validation_failures,
-            "last_read_timestamp": self.last_read_timestamp,
             "status": "active" if self._is_windows else "fallback_disabled",
         }
 
@@ -188,3 +199,48 @@ class LiveWindowsEventReader:
                 event_chunks.append(event_xml)
 
         return event_chunks
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Manual Windows Smoke-Test CLI Entry Point
+# Run with:  python -m ai.collection.live_reader
+# ──────────────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    print("=" * 72)
+    print("  Local Windows Security Event Log Reader — Phase 2.1 Smoke Test")
+    print("=" * 72)
+
+    reader = LiveWindowsEventReader(channel="Security")
+    print(f"  Target Channel : {reader.channel}")
+    print(f"  Is Windows OS  : {reader.is_available()}")
+    print()
+
+    print("[INFO] Querying recent Security Event Log records...")
+    events = reader.read_new_events(max_records=10)
+    status = reader.get_reader_status()
+
+    print()
+    print("------------------------------------------------------------------------")
+    print("  ACQUISITION REPORT")
+    print("------------------------------------------------------------------------")
+    print(f"  Status             : {status['status'].upper()}")
+    print(f"  Total Events Read  : {status['total_events_read']}")
+    print(f"  Last Record ID     : {status['last_record_id']}")
+    print(f"  Last Read Timestamp: {status['last_read_timestamp']}")
+    print(f"  Validation Failures: {status['validation_failures']}")
+
+    if events:
+        print()
+        print(f"  Acquired Events (first {min(5, len(events))}):")
+        for i, evt in enumerate(events[:5], 1):
+            tag = "MONITORED" if evt.is_monitored_event() else "general  "
+            print(
+                f"    [{i}] RecordID={evt.record_id:<8} "
+                f"EventID={evt.event_id:<6} "
+                f"Computer={evt.computer:<20} "
+                f"User={evt.target_user or evt.subject_user:<15} [{tag}]"
+            )
+
+    print()
+    print("=" * 72)
