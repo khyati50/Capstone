@@ -118,7 +118,7 @@ class LiveEventHandoffEngine:
     def __init__(
         self,
         max_queue_size: int = 1000,
-        overflow_policy: str = "drop_oldest",
+        overflow_policy: str = "block",
     ) -> None:
         """Initialize LiveEventHandoffEngine.
 
