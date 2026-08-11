@@ -1,6 +1,6 @@
 """ai.collection — Windows Event Collector Foundation Package.
 
-Module-level exports for Phase 1, Phase 2.1, and Phase 2.2 using lazy imports
+Module-level exports for Phase 1, Phase 2.1, Phase 2.2, and Phase 2.3 using lazy imports
 to prevent sys.modules conflicts when running CLI submodules.
 
 Exports:
@@ -8,6 +8,9 @@ Exports:
   - WindowsEventCollector     : Primary batch ingestion engine (JSON & EVTX files)
   - LiveWindowsEventReader    : Local Windows Security Event Log acquisition engine
   - LocalSecurityLogMonitor   : Continuous background Security Event Log monitor
+  - LiveEventHandoffEngine    : Boundary engine for delivering live events to consumers
+  - EventConsumer             : Abstract base class for downstream event consumers
+  - FunctionEventConsumer     : Function wrapper for event consumers
   - normalize_json_event      : JSON event normalizer
   - normalize_evtx_record     : EVTX binary record normalizer
   - normalize_live_xml_event   : Live Windows Event Log XML normalizer
@@ -27,6 +30,9 @@ __all__ = [
     "WindowsEventCollector",
     "LiveWindowsEventReader",
     "LocalSecurityLogMonitor",
+    "LiveEventHandoffEngine",
+    "EventConsumer",
+    "FunctionEventConsumer",
     "normalize_json_event",
     "normalize_evtx_record",
     "normalize_live_xml_event",
@@ -58,4 +64,13 @@ def __getattr__(name: str):
         from ai.collection.live_monitor import LocalSecurityLogMonitor
 
         return LocalSecurityLogMonitor
+    elif name in ("LiveEventHandoffEngine", "EventConsumer", "FunctionEventConsumer"):
+        from ai.collection.live_handoff import LiveEventHandoffEngine, EventConsumer, FunctionEventConsumer
+
+        if name == "LiveEventHandoffEngine":
+            return LiveEventHandoffEngine
+        elif name == "EventConsumer":
+            return EventConsumer
+        else:
+            return FunctionEventConsumer
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
