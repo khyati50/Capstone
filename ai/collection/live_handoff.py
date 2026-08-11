@@ -323,3 +323,61 @@ class LiveEventHandoffEngine:
             processed = self.process_next_event()
             if not processed:
                 time.sleep(0.02)
+
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Manual Windows Smoke-Test CLI Entry Point
+# Run with:  python -m ai.collection.live_handoff --duration 3.0
+# ──────────────────────────────────────────────────────────────────────────────
+
+if __name__ == "__main__":
+    import argparse
+    from ai.collection.live_monitor import LocalSecurityLogMonitor
+
+    parser = argparse.ArgumentParser(description="Live Event Pipeline Handoff Engine Smoke Test")
+    parser.add_argument("--duration", type=float, default=3.0, help="Monitoring duration in seconds")
+    parser.add_argument("--interval", type=float, default=1.0, help="Polling interval in seconds")
+    args = parser.parse_args()
+
+    print("=" * 72)
+    print("  Live Event Pipeline Handoff Engine — Phase 2.3 Smoke Test")
+    print("=" * 72)
+    print(f"  Duration : {args.duration} seconds")
+    print(f"  Interval : {args.interval} seconds")
+    print()
+
+    monitor = LocalSecurityLogMonitor(poll_interval_sec=args.interval)
+    engine = LiveEventHandoffEngine(max_queue_size=1000, overflow_policy="drop_oldest")
+    consumer = MinimalTestConsumer(consumer_id="live_security_test_consumer")
+
+    engine.register_consumer(consumer)
+    monitor.add_listener(lambda evt: engine.submit_event(evt))
+
+    print("[INFO] Starting continuous monitor & handoff engine...")
+    monitor.start_monitoring()
+    engine.start_handoff()
+
+    try:
+        time.sleep(args.duration)
+    except KeyboardInterrupt:
+        print("\n[INFO] Smoke test interrupted by user.")
+
+    print("[INFO] Stopping monitor & handoff engine...")
+    monitor.stop_monitoring()
+    engine.stop_handoff()
+
+    print()
+    print("------------------------------------------------------------------------")
+    print("  HANDOFF ENGINE REPORT")
+    print("------------------------------------------------------------------------")
+    stats = engine.get_handoff_stats()
+    print(f"  Engine Status      : {stats['status'].upper()}")
+    print(f"  Total Submitted    : {stats['total_submitted']}")
+    print(f"  Total Delivered    : {stats['total_delivered']}")
+    print(f"  Dropped Count      : {stats['dropped_count']}")
+    print(f"  Delivery Failures  : {stats['delivery_failures']}")
+    print(f"  Active Consumers   : {stats['active_consumers']}")
+    print()
+    consumer.print_summary()
+    print()
+    print("=" * 72)
