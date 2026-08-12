@@ -1,10 +1,40 @@
 const express = require('express');
 const router = express.Router();
 const { sendPredictionRequest } = require('../services/predictionProxy');
-const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate } = require('../services/socketService');
-const { saveProcessedPipelineResult, getEvents } = require('../services/dbService');
+const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate } = require('../services/socketService');
+const { saveProcessedPipelineResult, getEvents, getRiskMetrics, getMitreMatrix, getTimeline } = require('../services/dbService');
 
-// POST /api/events - Ingest log event
+// POST /api/events/pipeline-result - Ingest pre-processed live pipeline result from Python consumer
+router.post('/pipeline-result', async (req, res) => {
+  try {
+    const pipelineResult = req.body;
+    const { logEntry, alertEntry } = await saveProcessedPipelineResult(pipelineResult);
+
+    if (alertEntry) {
+      broadcastAlert(alertEntry);
+    }
+
+    // Broadcast updated cumulative SOC metrics
+    const currentRisk = await getRiskMetrics();
+    const currentMitre = await getMitreMatrix();
+    const latestIncId = alertEntry ? alertEntry.incident_id : null;
+    const currentTimeline = await getTimeline(latestIncId);
+
+    broadcastRiskUpdate(currentRisk);
+    broadcastMitreUpdate(currentMitre.mapped_techniques);
+    broadcastTimelineUpdate(currentTimeline);
+
+    res.json({
+      message: 'Live pipeline result persisted and broadcasted successfully',
+      logId: logEntry ? logEntry.id : null,
+      alertId: alertEntry ? alertEntry.alert_id : null
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/events - Ingest log event via proxy
 router.post('/', async (req, res) => {
   try {
     const event = req.body;

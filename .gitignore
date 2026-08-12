@@ -28,6 +28,7 @@ dataset/atomic-evtx-extracted/attacks_by_category_atomic_and_tools_removed/
 # IDE & OS
 .vscode/
 .idea/
+.vs/
 Thumbs.db
 .DS_Store
 
