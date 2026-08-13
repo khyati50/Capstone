@@ -38,51 +38,61 @@ Built-in multi-agent review architecture enforcing code quality, type annotation
 
 ---
 
-## 🏗️ System Architecture
+## 📂 Expected Raw Dataset Directory Structure (`dataset/`)
+
+If you are running the dataset ingestion and training pipeline from scratch, place your raw dataset files under the `dataset/` directory according to the following path structure:
 
 ```
-                                 ┌─────────────────────────┐
-                                 │  Windows EVTX / JSON    │
-                                 │   Event Log Streams     │
-                                 └────────────┬────────────┘
-                                              │
-                                              ▼
-                                 ┌─────────────────────────┐
-                                 │  10-Feature Extraction  │
-                                 │   Engineering Pipeline  │
-                                 └────────────┬────────────┘
-                                              │
-                                              ▼
-                                 ┌─────────────────────────┐
-                                 │  FastAPI AI Microservice│
-                                 │  (Prediction + SHAP +   │
-                                 │   Security Intel Layer) │
-                                 └────────────┬────────────┘
-                                              │
-                                              ▼
-                                 ┌─────────────────────────┐
-                                 │ Express REST & Socket.IO│
-                                 │   Backend Gateway       │
-                                 └────────────┬────────────┘
-                                              │
-                                              ▼
-                                 ┌─────────────────────────┐
-                                 │ React Cyber Dashboard   │
-                                 │ (XAI Explainer, Risk,   │
-                                 │  MITRE Matrix, Timeline)│
-                                 └─────────────────────────┘
+dataset/
+├── atomic-evtx-extracted/
+│   └── attacks_by_category_atomic_and_tools_removed/   # EVTX JSON files by category
+│       ├── Credential Access/
+│       ├── Defense Evasion/
+│       └── ...
+├── Windows-APT 2025 A Dataset for APT-Inspired Attack/
+│   └── combined.csv                                    # Windows-APT attack & background log CSV
+└── comiset/
+    └── Comiset23_Lab_Environment_Dataset/
+        └── dataset_comillas2.json                      # Winlogbeat/ECS format COMISET JSON
 ```
 
 ---
 
-## ⚡ Quickstart Guide
+## 🛠️ Data Pipeline & Research Script Execution
 
-### 1. Prerequisites
-- Python 3.11+
-- Node.js 18+ & npm
-- MySQL 8.0+
+All pipeline scripts automatically create missing target directories (`data/processed/phase10_2/`, `ai/models/artifacts/`, `reports/diagrams/`) at runtime using `Path.mkdir(parents=True, exist_ok=True)`.
 
-### 2. Environment Setup
+### Step-by-Step Pipeline Commands
+
+```bash
+# Step 1: Rebuild Unified Supervised Datasets (Atomic Red Team + Windows-APT)
+.venv\Scripts\python.exe scratch/rebuild_phase10_2_unified.py
+# → Output: data/processed/phase10_2/ (train.csv, val.csv, internal_test.csv, external_test_windows_apt.csv)
+
+# Step 2: Stream COMISET Full Dataset Ingestion with Checkpointing
+.venv\Scripts\python.exe scratch/ingest_comiset_full_corrected.py
+# → Output: data/processed/phase10_2/comiset_chunks/ (chunk_*.parquet, checkpoint.json)
+
+# Step 3: Train 5-Seed Candidate Models & Rebuild Artifacts
+.venv\Scripts\python.exe scratch/execute_phase11_1_multiseed.py
+# → Output: ai/models/artifacts/ (best_model.pkl, preprocessor.pkl, isolation_forest.pkl, seed_checkpoints/)
+#           ai/models/artifacts/metrics/per_seed_metrics.csv
+
+# Step 4: Run Anti-Overfitting & Stability Validation Suite
+.venv\Scripts\python.exe scratch/validate_anti_overfit.py
+# → Output: ai/models/artifacts/metrics/ (loo_importance.csv, cv_fold_scores.csv)
+
+# Step 5: Generate 11 Publication-Ready Figures & Research Summary
+.venv\Scripts\python.exe scratch/generate_research_diagrams.py
+# → Output: reports/diagrams/ (fig1_confusion_matrix.png ... fig11_eventfreq_violin.png)
+#           reports/research_paper_metrics_summary.json
+```
+
+---
+
+## ⚡ Quickstart & Server Launch
+
+### 1. Environment Setup
 
 ```bash
 # Clone the repository
@@ -107,7 +117,7 @@ npm install
 cd ..
 ```
 
-### 3. Service Launch
+### 2. Service Launch
 
 ```bash
 # Terminal 1: Start FastAPI Microservice (Port 8000)
