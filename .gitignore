@@ -26,13 +26,19 @@ ai/models/artifacts/seed_checkpoints/
 
 # Raw Datasets & Large Processed Files
 dataset/
+data/processed/phase10/
 data/processed/phase10_2/comiset_chunks/
 data/processed/phase10_2/*.parquet
 *.csv
 
-# Scratch Files, Internal Notes & Temp Logs
+# Scratch Files, Internal Notes, Reports & Temp Logs
 scratch/
 docs/
+reports/*.md
+FINAL_AUDIT_REPORT.md
+agent.md
+rules.md
+security.md
 summary.md
 *.log
 
