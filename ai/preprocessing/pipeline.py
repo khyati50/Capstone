@@ -2,10 +2,11 @@
 
 from pathlib import Path
 from typing import Tuple
+
 import pandas as pd
 
-from .parser import parse_all_scenarios
 from .feature_engineering import engineer_features
+from .parser import parse_all_scenarios
 from .splitter import scenario_level_split
 
 

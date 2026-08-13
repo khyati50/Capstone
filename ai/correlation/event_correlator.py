@@ -8,8 +8,8 @@ Example Chain Sequence:
 4672 (Privileges Assigned) -> 4688 (PowerShell Execution)
 """
 
-from typing import Dict, Any
 import uuid
+from typing import Any, Dict
 
 
 class EventCorrelator:

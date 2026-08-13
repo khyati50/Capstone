@@ -12,17 +12,17 @@ Exports:
 """
 
 from ai.realtime.buffer import RealTimeEventBuffer
-from ai.realtime.metrics import StreamMetricsCalculator
-from ai.realtime.listener import RealTimeStreamListener
-from ai.realtime.feature_bridge import RealTimeFeatureBridge, RealTimeFeatureVector
 from ai.realtime.detection_consumer import AIDetectionConsumer
-from ai.realtime.result_dispatcher import LiveResultDispatcher
+from ai.realtime.feature_bridge import RealTimeFeatureBridge, RealTimeFeatureVector
+from ai.realtime.listener import RealTimeStreamListener
+from ai.realtime.metrics import StreamMetricsCalculator
 from ai.realtime.producers import (
     BaseStreamProducer,
     FileTailProducer,
-    WinEvtLogProducer,
     SyntheticStreamProducer,
+    WinEvtLogProducer,
 )
+from ai.realtime.result_dispatcher import LiveResultDispatcher
 
 __all__ = [
     "RealTimeEventBuffer",

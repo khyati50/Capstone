@@ -1,0 +1,52 @@
+{
+  "rf_internal": {
+    "rows": 13249,
+    "malicious": 1069,
+    "benign": 12180,
+    "accuracy": 0.9997,
+    "precision": 0.9963,
+    "recall": 1.0,
+    "f1": 0.9981,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "tp": 1069,
+    "tn": 12176,
+    "fp": 4,
+    "fn": 0,
+    "fpr": 0.0003,
+    "fnr": 0.0
+  },
+  "iso_internal": {
+    "rows": 13249,
+    "benign": 12180,
+    "malicious": 1069,
+    "benign_fpr": 0.0111,
+    "malicious_detection_rate": 1.0,
+    "precision": 0.8879,
+    "recall": 1.0,
+    "f1": 0.9406
+  },
+  "rf_external": {
+    "rows": 63619,
+    "malicious": 63619,
+    "benign": 0,
+    "detected": 534,
+    "missed": 63085,
+    "detection_rate": 0.0084,
+    "fpr": "NOT AVAILABLE \u2014 zero benign events"
+  },
+  "iso_external": {
+    "rows": 63619,
+    "malicious": 63619,
+    "detected": 48946,
+    "missed": 14673,
+    "detection_rate": 0.7694,
+    "fpr": "NOT AVAILABLE \u2014 zero benign events"
+  },
+  "comiset": {
+    "rows": 50000,
+    "flagged": 0,
+    "flagged_pct": 0.0,
+    "mean_score": 0.0
+  }
+}

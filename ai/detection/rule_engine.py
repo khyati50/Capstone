@@ -7,7 +7,7 @@ Evaluates security rules against event metadata:
 - Admin Account Creation: Event 4720 / Event 4732
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class RuleEngine:

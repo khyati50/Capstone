@@ -1,0 +1,28 @@
+{
+  "phase": "11.1",
+  "winning_model": "XGBoost",
+  "best_seed": 42,
+  "n_features": 10,
+  "features": [
+    "failed_login_count_5m",
+    "time_delta_prev_event",
+    "is_powershell_executed",
+    "privilege_escalation_flag",
+    "unusual_process_parent_ratio",
+    "session_duration",
+    "commandline_entropy",
+    "event_frequency_1h",
+    "is_known_attack_eventid",
+    "process_name_entropy"
+  ],
+  "validation_accuracy_mean": 0.9997746732762506,
+  "validation_accuracy_std": 0.0,
+  "validation_f1_mean": 0.9996536196744025,
+  "validation_f1_std": 0.0,
+  "validation_roc_auc_mean": 1.0,
+  "validation_roc_auc_std": 0.0,
+  "validation_pr_auc_mean": 1.0,
+  "validation_pr_auc_std": 0.0,
+  "validation_fpr_mean": 0.0,
+  "validation_fpr_std": 0.0
+}

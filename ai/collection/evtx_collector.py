@@ -15,7 +15,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List
 
-from ai.collection.normalizer import normalize_json_event, normalize_evtx_record
+from ai.collection.normalizer import normalize_evtx_record, normalize_json_event
 from ai.collection.schema import WindowsEventSchema
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")

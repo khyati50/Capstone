@@ -10,18 +10,19 @@ Validates robust error handling for edge cases:
 """
 
 import json
-import pytest
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
 
-from ai.preprocessing.parser import parse_scenario_json, parse_all_scenarios, get_last_parser_summary
-from ai.preprocessing.feature_engineering import engineer_features
+import pytest
+
+from ai.correlation.event_correlator import EventCorrelator
 from ai.detection.hybrid_engine import HybridDetectionEngine
-from ai.prediction.service import PredictionService
 from ai.explainability.security_intel import SecurityIntelligenceLayer
 from ai.explainability.shap_explainer import ShapExplainer
 from ai.mitre.mapper import MitreMapper
-from ai.correlation.event_correlator import EventCorrelator
+from ai.prediction.service import PredictionService
+from ai.preprocessing.feature_engineering import engineer_features
+from ai.preprocessing.parser import get_last_parser_summary, parse_all_scenarios, parse_scenario_json
 
 
 class TestNegativeCases:

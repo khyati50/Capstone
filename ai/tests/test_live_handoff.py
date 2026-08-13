@@ -13,11 +13,11 @@ Phase 2.3 — Live Event Pipeline Handoff Engine
 
 import time
 from typing import List
+
 import pytest
 
 from ai.collection.live_handoff import EventConsumer, FunctionEventConsumer, LiveEventHandoffEngine
 from ai.collection.schema import WindowsEventSchema
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test Fixtures & Stub Consumer
@@ -217,7 +217,6 @@ class TestLiveEventHandoffEngine:
         assert reader.last_record_id == 1000
         assert engine.delivery_failures == 1
 
-
     def test_minimal_test_consumer_receives_multiple_events_in_order(self) -> None:
         """MinimalTestConsumer receives and records multiple events in exact sequential order."""
         from ai.collection import MinimalTestConsumer
@@ -263,7 +262,8 @@ class TestLiveEventHandoffEngine:
 
     def test_package_exports(self) -> None:
         """Handoff components are exportable from ai.collection."""
-        from ai.collection import LiveEventHandoffEngine as Engine, EventConsumer as Consumer
+        from ai.collection import EventConsumer as Consumer
+        from ai.collection import LiveEventHandoffEngine as Engine
 
         e = Engine()
         assert e.max_queue_size == 1000

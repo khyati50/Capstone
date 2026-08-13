@@ -7,11 +7,10 @@ metrics tracking.
 Phase 2.1 — Windows Real-Time Implementation
 """
 
-from collections import deque
 import logging
-
+from collections import deque
 from threading import Lock
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, List, Optional
 
 from ai.collection.schema import WindowsEventSchema
 

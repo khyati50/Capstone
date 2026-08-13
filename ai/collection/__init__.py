@@ -19,10 +19,10 @@ Exports:
 """
 
 from ai.collection.schema import (
-    WindowsEventSchema,
-    REQUIRED_FIELDS,
-    MONITORED_EVENT_IDS,
     LOG_CHANNELS,
+    MONITORED_EVENT_IDS,
+    REQUIRED_FIELDS,
+    WindowsEventSchema,
 )
 
 __all__ = [
@@ -49,7 +49,7 @@ def __getattr__(name: str):
 
         return WindowsEventCollector
     elif name in ("normalize_json_event", "normalize_evtx_record"):
-        from ai.collection.normalizer import normalize_json_event, normalize_evtx_record
+        from ai.collection.normalizer import normalize_evtx_record, normalize_json_event
 
         return normalize_json_event if name == "normalize_json_event" else normalize_evtx_record
     elif name == "normalize_live_xml_event":
@@ -66,9 +66,9 @@ def __getattr__(name: str):
         return LocalSecurityLogMonitor
     elif name in ("LiveEventHandoffEngine", "EventConsumer", "FunctionEventConsumer", "MinimalTestConsumer"):
         from ai.collection.live_handoff import (
-            LiveEventHandoffEngine,
             EventConsumer,
             FunctionEventConsumer,
+            LiveEventHandoffEngine,
             MinimalTestConsumer,
         )
 

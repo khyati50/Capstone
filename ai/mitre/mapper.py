@@ -8,7 +8,7 @@ Maps Windows Event IDs, Rule triggers, and Process activity directly to MITRE AT
 - 4720 -> T1136.001 (Account Creation / Persistence)
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
 
 
 class MitreMapper:

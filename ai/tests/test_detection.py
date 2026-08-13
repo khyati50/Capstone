@@ -1,8 +1,9 @@
 """Unit Tests for Phase 7 & 8 Detection Engine and Simulation Module."""
 
 import pytest
-from ai.detection.rule_engine import RuleEngine
+
 from ai.detection.hybrid_engine import HybridDetectionEngine
+from ai.detection.rule_engine import RuleEngine
 from ai.detection.simulation import SimulationEngine
 
 

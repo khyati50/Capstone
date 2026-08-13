@@ -18,14 +18,13 @@ import pytest
 
 from ai.collection.schema import WindowsEventSchema
 from ai.realtime import (
-    RealTimeEventBuffer,
-    StreamMetricsCalculator,
-    RealTimeStreamListener,
     FileTailProducer,
-    WinEvtLogProducer,
+    RealTimeEventBuffer,
+    RealTimeStreamListener,
+    StreamMetricsCalculator,
     SyntheticStreamProducer,
+    WinEvtLogProducer,
 )
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 1. RealTimeEventBuffer Tests

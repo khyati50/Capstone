@@ -1,7 +1,8 @@
 #!/bin/sh
 # ============================================================
 #  pre-commit hook — Python code quality gate
-#  Enforced rules: black formatting, flake8 linting, pytest
+#  Enforced rules: black formatting, isort, flake8 linting, pytest,
+#                  feature count guard, secrets scan
 #  Install: git config core.hooksPath .githooks
 # ============================================================
 
@@ -32,6 +33,19 @@ if [ $FLAKE_EXIT -ne 0 ]; then
 fi
 echo "  ✅ Flake8: OK"
 
+# ── 2b. Check isort import ordering ─────────────────────────
+echo "  → Checking isort import ordering..."
+.venv/Scripts/python.exe -m isort ai/ --check-only --quiet 2>&1
+ISORT_EXIT=$?
+if [ $ISORT_EXIT -ne 0 ]; then
+  echo ""
+  echo "  ❌ ISORT IMPORT ORDER FAILED"
+  echo "  Run: .venv/Scripts/python.exe -m isort ai/"
+  echo "  Then re-stage and commit."
+  exit 1
+fi
+echo "  ✅ isort: OK"
+
 # ── 3. Run pytest ────────────────────────────────────────────
 echo "  → Running pytest ai/tests/..."
 .venv/Scripts/python.exe -m pytest ai/tests/ -q --tb=short 2>&1
@@ -56,6 +70,20 @@ if [ -n "$SECRETS" ]; then
   exit 1
 fi
 echo "  ✅ Secrets scan: Clean"
+
+# ── 5. Feature count guard ────────────────────────────────────
+# Ensures NUMERICAL_FEATURES in config.py always has the expected count.
+# Prevents silent feature additions/removals from breaking trained models.
+echo "  → Checking NUMERICAL_FEATURES count..."
+FEAT_COUNT=$(.venv/Scripts/python.exe -c "from ai.config import NUMERICAL_FEATURES; print(len(NUMERICAL_FEATURES))" 2>/dev/null)
+if [ "$FEAT_COUNT" != "10" ]; then
+  echo ""
+  echo "  ❌ NUMERICAL_FEATURES COUNT MISMATCH"
+  echo "  Expected 10, got: $FEAT_COUNT"
+  echo "  If intentional, update this hook's expected count."
+  exit 1
+fi
+echo "  ✅ Feature count: $FEAT_COUNT/10 OK"
 
 echo ""
 echo "✅ [pre-commit] All checks passed — proceeding with commit."

@@ -2,21 +2,22 @@
 
 Converts live continuous Windows Security Event Log streams (WindowsEventSchema)
 into real-time model feature vectors in memory. Maintains rolling window state
-(failed_login_count_5m, time_delta_prev_event, session_duration) and process
-heuristics (powershell, privilege escalation, unusual process parent ratio).
+(failed_login_count_5m, time_delta_prev_event, session_duration, event_frequency_1h) and process
+heuristics (powershell, privilege escalation, unusual process parent ratio, entropy).
 
 Phase 2.3 — Windows Real-Time Feature Extraction Bridge
 """
 
+import logging
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import logging
 from threading import Lock
 from typing import Any, Dict
 
 from ai.collection.schema import WindowsEventSchema
 from ai.config import ALL_FEATURE_KEYS
+from ai.preprocessing.feature_engineering import ATTACK_EVENT_IDS, calculate_entropy
 
 logger = logging.getLogger("RealTimeFeatureBridge")
 
@@ -52,6 +53,10 @@ class RealTimeFeatureVector:
     privilege_escalation_flag: float = 0.0
     unusual_process_parent_ratio: float = 0.0
     session_duration: float = 0.0
+    commandline_entropy: float = 0.0
+    event_frequency_1h: float = 1.0
+    is_known_attack_eventid: float = 0.0
+    process_name_entropy: float = 0.0
     EventID: int = 0
     Provider_Name: str = ""
     LogonType: int = 0
@@ -73,6 +78,10 @@ class RealTimeFeatureVector:
             "privilege_escalation_flag": self.privilege_escalation_flag,
             "unusual_process_parent_ratio": self.unusual_process_parent_ratio,
             "session_duration": self.session_duration,
+            "commandline_entropy": self.commandline_entropy,
+            "event_frequency_1h": self.event_frequency_1h,
+            "is_known_attack_eventid": self.is_known_attack_eventid,
+            "process_name_entropy": self.process_name_entropy,
             "EventID": self.EventID,
             "Provider_Name": self.Provider_Name,
             "LogonType": self.LogonType,
@@ -100,6 +109,7 @@ class RealTimeFeatureBridge:
         self._failed_logins: Dict[str, deque[float]] = {}
         self._last_host_event_time: Dict[str, float] = {}
         self._user_session_start: Dict[str, float] = {}
+        self._host_event_history: Dict[str, deque[float]] = {}
         self._lock = Lock()
 
     def process_event(self, event: WindowsEventSchema) -> RealTimeFeatureVector:
@@ -134,6 +144,19 @@ class RealTimeFeatureBridge:
             # 6. session_duration (active session duration in seconds)
             session_dur = self._update_session_duration(event, evt_time, user_key)
 
+            # 7. commandline_entropy
+            cmd_entropy = calculate_entropy(event.command_line or "")
+
+            # 8. event_frequency_1h
+            event_freq_1h = self._update_event_frequency_1h(host_key, evt_time)
+
+            # 9. is_known_attack_eventid
+            is_attack_eid = 1.0 if event.event_id in ATTACK_EVENT_IDS else 0.0
+
+            # 10. process_name_entropy
+            proc_name = (event.process_name or "").split("\\")[-1]
+            proc_entropy = calculate_entropy(proc_name)
+
             # Categorical features
             provider = event.provider_name or "Microsoft-Windows-Security-Auditing"
 
@@ -144,6 +167,10 @@ class RealTimeFeatureBridge:
                 privilege_escalation_flag=is_priv_esc,
                 unusual_process_parent_ratio=is_unusual_parent,
                 session_duration=session_dur,
+                commandline_entropy=cmd_entropy,
+                event_frequency_1h=event_freq_1h,
+                is_known_attack_eventid=is_attack_eid,
+                process_name_entropy=proc_entropy,
                 EventID=event.event_id,
                 Provider_Name=provider,
                 LogonType=event.logon_type,
@@ -159,6 +186,7 @@ class RealTimeFeatureBridge:
             self._failed_logins.clear()
             self._last_host_event_time.clear()
             self._user_session_start.clear()
+            self._host_event_history.clear()
 
     # ──────────────────────────────────────────────────────────
     # Private Feature Helper Methods
@@ -169,11 +197,10 @@ class RealTimeFeatureBridge:
         if not ts_str:
             return datetime.now(timezone.utc).timestamp()
         try:
-            # Handle standard ISO formats with 'Z' or offset
             ts_clean = ts_str.rstrip("Z")
             if "." in ts_clean:
                 parts = ts_clean.split(".")
-                ts_clean = f"{parts[0]}.{parts[1][:6]}"  # Truncate nanoseconds to microseconds
+                ts_clean = f"{parts[0]}.{parts[1][:6]}"
             dt = datetime.fromisoformat(ts_clean)
             if dt.tzinfo is None:
                 dt = dt.replace(tzinfo=timezone.utc)
@@ -189,11 +216,9 @@ class RealTimeFeatureBridge:
 
         q = self._failed_logins[tracker_key]
 
-        # Record new 4625 failed login timestamp
         if event.event_id == 4625:
             q.append(evt_time)
 
-        # Purge timestamps older than rolling window_seconds
         cutoff = evt_time - self.window_seconds
         while q and q[0] < cutoff:
             q.popleft()
@@ -210,6 +235,20 @@ class RealTimeFeatureBridge:
 
         self._last_host_event_time[host_key] = evt_time
         return round(delta, 3)
+
+    def _update_event_frequency_1h(self, host_key: str, evt_time: float) -> float:
+        """Calculate host event frequency over rolling 1-hour window."""
+        if host_key not in self._host_event_history:
+            self._host_event_history[host_key] = deque()
+
+        q = self._host_event_history[host_key]
+        q.append(evt_time)
+
+        cutoff = evt_time - 3600.0
+        while q and q[0] < cutoff:
+            q.popleft()
+
+        return float(len(q))
 
     def _check_powershell(self, event: WindowsEventSchema) -> float:
         """Check if event involves PowerShell execution."""

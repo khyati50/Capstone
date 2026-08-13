@@ -10,13 +10,13 @@ LocalSecurityLogMonitor and delivers them to registered EventConsumer instances.
 Phase 2.3 — Live Event Pipeline Handoff Engine
 """
 
-from abc import ABC, abstractmethod
-from collections import deque
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional
 import uuid
+from abc import ABC, abstractmethod
+from collections import deque
+from typing import Any, Callable, Dict, List, Optional
 
 from ai.collection.schema import WindowsEventSchema
 
@@ -332,6 +332,7 @@ class LiveEventHandoffEngine:
 
 if __name__ == "__main__":
     import argparse
+
     from ai.collection.live_monitor import LocalSecurityLogMonitor
 
     parser = argparse.ArgumentParser(description="Live Event Pipeline Handoff Engine Smoke Test")

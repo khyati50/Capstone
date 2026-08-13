@@ -1,0 +1,49 @@
+{
+  "dataset_summary": {
+    "train_total": 29479,
+    "val_total": 13606,
+    "internal_test_total": 13606,
+    "external_test_total": 63619,
+    "n_features": 10,
+    "feature_list": [
+      "failed_login_count_5m",
+      "time_delta_prev_event",
+      "is_powershell_executed",
+      "privilege_escalation_flag",
+      "unusual_process_parent_ratio",
+      "session_duration",
+      "commandline_entropy",
+      "event_frequency_1h",
+      "is_known_attack_eventid",
+      "process_name_entropy"
+    ]
+  },
+  "internal_test_performance": {
+    "accuracy": 0.9999265030133765,
+    "f1_score": 0.9996494917630564,
+    "precision": 0.9992992291520673,
+    "recall": 1.0,
+    "fpr": 8.210180623973728e-05,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "mcc": 0.9996085158102544
+  },
+  "external_test_performance": {
+    "detection_rate_pct": 1.08,
+    "detected_count": 689,
+    "total_attack_count": 63619
+  },
+  "diagrams_generated": [
+    "fig1_confusion_matrix.png",
+    "fig2_roc_curve.png",
+    "fig3_pr_curve.png",
+    "fig4_feature_importance.png",
+    "fig5_multiseed_boxplot.png",
+    "fig6_learning_curve.png",
+    "fig7_label_distribution.png",
+    "fig8_correlation_heatmap.png",
+    "fig9_timedelta_histogram.png",
+    "fig10_sessionduration_violin.png",
+    "fig11_eventfreq_violin.png"
+  ]
+}

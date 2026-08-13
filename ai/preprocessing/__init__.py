@@ -1,7 +1,7 @@
 """Preprocessing Package Initialization."""
 
-from .parser import parse_scenario_json, parse_all_scenarios
 from .feature_engineering import engineer_features
+from .parser import parse_all_scenarios, parse_scenario_json
 from .splitter import scenario_level_split
 
 __all__ = [

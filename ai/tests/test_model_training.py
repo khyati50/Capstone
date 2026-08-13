@@ -1,12 +1,14 @@
 """Unit Tests for Phase 5 Model Training and Evaluation."""
 
-import pytest
-import pandas as pd
-import numpy as np
 from pathlib import Path
-from ai.models.trainer import train_candidate_models, prepare_feature_matrix
-from ai.models.evaluator import evaluate_model_performance
+
+import numpy as np
+import pandas as pd
+import pytest
 from sklearn.ensemble import RandomForestClassifier
+
+from ai.models.evaluator import evaluate_model_performance
+from ai.models.trainer import prepare_feature_matrix, train_candidate_models
 
 
 def test_prepare_feature_matrix():

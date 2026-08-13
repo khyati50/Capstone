@@ -8,7 +8,7 @@ analyst-friendly human-readable security intelligence:
 4. InvestigationRecommendationModule: Actionable SOC playbooks and guidance
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
 
 EXPLANATION_TEMPLATES: Dict[str, str] = {
     "failed_login_count_5m": "High frequency of failed login attempts ({failed_cnt}) detected within 5 minutes.",

@@ -11,16 +11,16 @@ ai/models/artifacts/ (best_model.pkl, feature_names.json, preprocessor.pkl, meta
 """
 
 import json
-import joblib
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, Tuple
-import pandas as pd
-import numpy as np
+from typing import Any, Dict, Tuple
 
-from sklearn.ensemble import RandomForestClassifier, IsolationForest
-from sklearn.tree import DecisionTreeClassifier
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.ensemble import IsolationForest, RandomForestClassifier
 from sklearn.preprocessing import StandardScaler
+from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
 from ai.config import ARTIFACTS_DIR, NUMERICAL_FEATURES, RANDOM_STATE

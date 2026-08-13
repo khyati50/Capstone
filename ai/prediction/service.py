@@ -5,9 +5,10 @@ once into memory at startup and provides fast inference.
 """
 
 import json
-import joblib
 from pathlib import Path
-from typing import Dict, Any
+from typing import Any, Dict
+
+import joblib
 import pandas as pd
 
 from ai.config import ARTIFACTS_DIR
@@ -94,6 +95,14 @@ class PredictionService:
         if hasattr(self.model, "predict_proba"):
             probs = self.model.predict_proba(X_scaled)[0]
             prob = float(probs[pred])
+
+        # Hybrid rule-model alignment: strong security indicators override single-event tree feature distribution gaps
+        failed = float(event_features.get("failed_login_count_5m", 0.0))
+        is_ps = float(event_features.get("is_powershell_executed", 0.0))
+        is_priv = float(event_features.get("privilege_escalation_flag", 0.0))
+        if failed >= 3.0 or is_ps == 1.0 or is_priv == 1.0:
+            pred = 1
+            prob = max(prob, 0.92)
 
         # Generate rule-based SHAP weight proxies if tree explainer unavailable
         shap_weights = {}

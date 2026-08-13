@@ -10,16 +10,15 @@ Tests the continuous background monitor components:
 Phase 2.2 — Continuous Local Windows Security Event Monitoring
 """
 
-from unittest.mock import MagicMock
 import time
 from typing import List
+from unittest.mock import MagicMock
 
 import pytest
 
 from ai.collection.live_monitor import LocalSecurityLogMonitor
 from ai.collection.live_reader import LiveWindowsEventReader
 from ai.collection.schema import WindowsEventSchema
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures

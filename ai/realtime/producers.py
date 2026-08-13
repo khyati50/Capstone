@@ -9,14 +9,14 @@ Provides stream producers that push events into the RealTimeEventBuffer:
 Phase 2.1 — Windows Real-Time Implementation
 """
 
-from abc import ABC, abstractmethod
-from datetime import datetime, timezone
 import json
 import logging
-from pathlib import Path
 import random
 import time
-from typing import Dict, Any, Optional, List
+from abc import ABC, abstractmethod
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from ai.collection.normalizer import normalize_json_event
 from ai.collection.schema import WindowsEventSchema

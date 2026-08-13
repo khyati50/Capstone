@@ -7,7 +7,8 @@ unified alert object. Handles:
 - AI + Rule Agreement (Highest priority & confidence)
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 from ai.detection.rule_engine import RuleEngine
 from ai.prediction.service import PredictionService
 

@@ -1,38 +1,44 @@
-# Python
+# Python & Virtual Envs
 __pycache__/
 *.pyc
 *.pyo
 .venv/
+venv/
 *.egg-info/
 .pytest_cache/
 .coverage
 
-# Node.js
+# Node.js Dependencies & Builds
 node_modules/
 backend/node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/build/
 
-# Environment Variables
+# Environment Files (Secrets)
 .env
 backend/.env
 frontend/.env
 
-# Model Artifacts (large binaries)
+# Model Artifacts (Heavy Binaries)
 ai/models/artifacts/*.pkl
+ai/models/artifacts/seed_checkpoints/
 
-# Dataset (raw heavy log exports)
-dataset/atomic-evtx-extracted/attacks_by_category_atomic_and_tools_removed/
+# Raw Datasets & Large Processed Files
+dataset/
+data/processed/phase10_2/comiset_chunks/
+data/processed/phase10_2/*.parquet
+*.csv
 
-# IDE & OS
+# Scratch Files, Internal Notes & Temp Logs
+scratch/
+docs/
+summary.md
+*.log
+
+# IDE & OS Files
 .vscode/
 .idea/
 .vs/
 Thumbs.db
 .DS_Store
-
-# Temporary scratch logs
-*.log
-scratch/
-docs

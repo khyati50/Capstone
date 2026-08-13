@@ -1,0 +1,39 @@
+{
+  "phase": "10.2",
+  "description": "Unified Supervised Datasets with 10 Features",
+  "features": [
+    "failed_login_count_5m",
+    "time_delta_prev_event",
+    "is_powershell_executed",
+    "privilege_escalation_flag",
+    "unusual_process_parent_ratio",
+    "session_duration",
+    "commandline_entropy",
+    "event_frequency_1h",
+    "is_known_attack_eventid",
+    "process_name_entropy"
+  ],
+  "n_features": 10,
+  "split_counts": {
+    "train": {
+      "total": 29479,
+      "malicious": 6261,
+      "benign": 23218
+    },
+    "val": {
+      "total": 4438,
+      "malicious": 1444,
+      "benign": 2994
+    },
+    "internal_test": {
+      "total": 13606,
+      "malicious": 1426,
+      "benign": 12180
+    },
+    "external_test_windows_apt": {
+      "total": 63619,
+      "malicious": 63619,
+      "benign": 0
+    }
+  }
+}

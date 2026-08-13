@@ -18,15 +18,14 @@ from typing import Any, Dict
 
 import pytest
 
-from ai.collection.schema import (
-    WindowsEventSchema,
-    REQUIRED_FIELDS,
-    MONITORED_EVENT_IDS,
-    LOG_CHANNELS,
-)
-from ai.collection.normalizer import normalize_json_event
 from ai.collection.evtx_collector import WindowsEventCollector
-
+from ai.collection.normalizer import normalize_json_event
+from ai.collection.schema import (
+    LOG_CHANNELS,
+    MONITORED_EVENT_IDS,
+    REQUIRED_FIELDS,
+    WindowsEventSchema,
+)
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
@@ -91,10 +90,22 @@ class TestWindowsEventSchema:
         """SC-01: WindowsEventSchema must have all 16 required fields."""
         schema = WindowsEventSchema()
         required_attrs = [
-            "event_id", "timestamp", "provider_name", "computer", "channel",
-            "target_user", "subject_user", "process_name", "parent_process_name",
-            "command_line", "source_ip", "destination_ip", "logon_type",
-            "scenario_id", "category", "raw",
+            "event_id",
+            "timestamp",
+            "provider_name",
+            "computer",
+            "channel",
+            "target_user",
+            "subject_user",
+            "process_name",
+            "parent_process_name",
+            "command_line",
+            "source_ip",
+            "destination_ip",
+            "logon_type",
+            "scenario_id",
+            "category",
+            "raw",
         ]
         for attr in required_attrs:
             assert hasattr(schema, attr), f"Missing field: {attr}"
@@ -377,9 +388,7 @@ class TestJsonFileCollection:
     def test_collect_single_event_json_file(self) -> None:
         """SC-02: collect_from_json_file returns a list of WindowsEventSchema."""
         record = _make_atomic_evtx_record(event_id=4625, computer="CORP-DC-01")
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
 
@@ -397,9 +406,7 @@ class TestJsonFileCollection:
             _make_atomic_evtx_record(event_id=4688, computer="DC-01"),
             _make_atomic_evtx_record(event_id=4672, computer="DC-01"),
         ]
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(records, fh)
             tmp_path = Path(fh.name)
 
@@ -413,9 +420,7 @@ class TestJsonFileCollection:
     def test_collect_updates_stats(self) -> None:
         """collect_from_json_file increments total_events_collected and total_files_processed."""
         record = _make_atomic_evtx_record()
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
 
@@ -432,9 +437,7 @@ class TestJsonFileCollection:
             _make_atomic_evtx_record(event_id=4625),
             _make_atomic_evtx_record(event_id=4688),
         ]
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(records, fh)
             tmp_path = Path(fh.name)
 
@@ -451,9 +454,7 @@ class TestJsonFileCollection:
 
     def test_collect_malformed_json_returns_empty(self) -> None:
         """collect_from_json_file returns empty list for malformed JSON content."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             fh.write("{this is not valid json ...")
             tmp_path = Path(fh.name)
 
@@ -465,9 +466,7 @@ class TestJsonFileCollection:
 
     def test_collect_empty_json_array_returns_empty(self) -> None:
         """collect_from_json_file returns empty list for an empty JSON array."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump([], fh)
             tmp_path = Path(fh.name)
 
@@ -482,9 +481,7 @@ class TestJsonFileCollection:
             {"Event": {"System": {"Computer": "HOST-01"}, "EventData": {}}},  # no EventID
             _make_atomic_evtx_record(event_id=4625),  # valid
         ]
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(invalid_records, fh)
             tmp_path = Path(fh.name)
 
@@ -498,8 +495,7 @@ class TestJsonFileCollection:
         """Collected events are tagged with the source file stem as scenario_id."""
         record = _make_atomic_evtx_record()
         with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8",
-            prefix="my_scenario_"
+            mode="w", suffix=".json", delete=False, encoding="utf-8", prefix="my_scenario_"
         ) as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
@@ -618,9 +614,7 @@ class TestCollectionStats:
     def test_health_healthy_after_valid_collection(self) -> None:
         """SC-06: Health is 'healthy' when events collected with zero failures."""
         record = _make_atomic_evtx_record(event_id=4625, computer="HOST-01")
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
 
@@ -638,9 +632,7 @@ class TestCollectionStats:
         # One invalid record (no EventID)
         records.append({"Event": {"System": {"Computer": "HOST"}, "EventData": {}}})
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(records, fh)
             tmp_path = Path(fh.name)
 
@@ -658,9 +650,7 @@ class TestCollectionStats:
         valid_records = [_make_atomic_evtx_record(event_id=4625, computer="DC-01")] * 8
         invalid_records = [{"bad": "data"}, {"also": "bad"}]
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(valid_records + invalid_records, fh)
             tmp_path = Path(fh.name)
 
@@ -673,9 +663,7 @@ class TestCollectionStats:
     def test_event_id_distribution_string_keys(self) -> None:
         """get_collection_stats() returns event_id_distribution with string keys."""
         record = _make_atomic_evtx_record(event_id=4625)
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
 
@@ -688,9 +676,7 @@ class TestCollectionStats:
     def test_reset_stats_zeroes_all_counters(self) -> None:
         """reset_stats() resets all tracking counters to initial zero state."""
         record = _make_atomic_evtx_record()
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".json", delete=False, encoding="utf-8"
-        ) as fh:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as fh:
             json.dump(record, fh)
             tmp_path = Path(fh.name)
 
@@ -742,9 +728,7 @@ class TestEvtxFileCollection:
 
     def test_collect_invalid_evtx_returns_empty_and_records_failed_file(self) -> None:
         """SC-03: collect_from_evtx_file returns empty list for corrupt/non-EVTX file."""
-        with tempfile.NamedTemporaryFile(
-            suffix=".evtx", delete=False
-        ) as fh:
+        with tempfile.NamedTemporaryFile(suffix=".evtx", delete=False) as fh:
             fh.write(b"This is not a real EVTX binary file.")
             tmp_path = Path(fh.name)
 
@@ -766,13 +750,13 @@ class TestPackageImports:
     def test_all_exports_importable(self) -> None:
         """All __all__ symbols from ai.collection are importable."""
         from ai.collection import (  # noqa: F401
-            WindowsEventSchema,
-            WindowsEventCollector,
-            normalize_json_event,
-            normalize_evtx_record,
-            REQUIRED_FIELDS,
-            MONITORED_EVENT_IDS,
             LOG_CHANNELS,
+            MONITORED_EVENT_IDS,
+            REQUIRED_FIELDS,
+            WindowsEventCollector,
+            WindowsEventSchema,
+            normalize_evtx_record,
+            normalize_json_event,
         )
 
     def test_collector_instantiable_from_package(self) -> None:

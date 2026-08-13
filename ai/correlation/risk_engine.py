@@ -15,13 +15,14 @@ Low (0-25), Medium (26-50), High (51-75), Critical (76-100).
 """
 
 import math
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 from ai.config import (
-    RISK_ENGINE_CONFIG,
-    TACTIC_STAGE_SCORES,
-    TACTIC_DIVERSITY_SCORES,
-    EVENT_TO_TACTIC,
     CORROBORATION_MULTIPLIER,
+    EVENT_TO_TACTIC,
+    RISK_ENGINE_CONFIG,
+    TACTIC_DIVERSITY_SCORES,
+    TACTIC_STAGE_SCORES,
 )
 
 

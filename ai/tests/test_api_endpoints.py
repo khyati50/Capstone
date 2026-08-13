@@ -6,6 +6,7 @@ edge cases, error handling, and contract validation.
 
 import pytest
 from fastapi.testclient import TestClient
+
 from ai.server import app
 
 client = TestClient(app)

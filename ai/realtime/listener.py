@@ -9,8 +9,8 @@ Phase 2.1 — Windows Real-Time Implementation
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Optional
 import uuid
+from typing import Any, Callable, Dict, Optional
 
 from ai.collection.schema import WindowsEventSchema
 from ai.realtime.buffer import RealTimeEventBuffer

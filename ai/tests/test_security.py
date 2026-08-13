@@ -9,11 +9,13 @@ Validates security hardening across every system layer:
 - Security header configuration
 """
 
-import pytest
 import json
 import re
 from pathlib import Path
+
+import pytest
 from fastapi.testclient import TestClient
+
 from ai.server import app
 
 client = TestClient(app)

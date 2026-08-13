@@ -13,8 +13,8 @@ Phase 2.2 — Continuous Local Windows Security Event Monitoring
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, List, Optional
 import uuid
+from typing import Any, Callable, Dict, List, Optional
 
 from ai.collection.live_reader import LiveWindowsEventReader
 from ai.collection.schema import WindowsEventSchema

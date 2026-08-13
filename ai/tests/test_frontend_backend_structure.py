@@ -9,9 +9,10 @@ the structural integrity of all frontend and backend source files:
 - Package.json dependency declarations
 """
 
-import pytest
 import re
 from pathlib import Path
+
+import pytest
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 

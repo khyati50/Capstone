@@ -1,9 +1,10 @@
 """Unit Tests for Phases 11, 12, 13 Correlation, Risk Engine, and MITRE Mapping."""
 
 import pytest
+
 from ai.correlation.event_correlator import EventCorrelator
-from ai.correlation.timeline_builder import TimelineBuilder
 from ai.correlation.risk_engine import DynamicRiskEngine
+from ai.correlation.timeline_builder import TimelineBuilder
 from ai.mitre.mapper import MitreMapper
 
 

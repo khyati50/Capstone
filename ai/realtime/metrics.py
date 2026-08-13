@@ -8,8 +8,8 @@ Calculates real-time performance metrics:
 Phase 2.1 — Windows Real-Time Implementation
 """
 
-from collections import deque
 import time
+from collections import deque
 from typing import Any, Dict
 
 from ai.collection.schema import WindowsEventSchema

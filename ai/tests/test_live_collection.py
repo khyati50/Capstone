@@ -15,15 +15,14 @@ Tests all required live collection constraints (0 Administrator rights required)
 Phase 2.1 / 2.2 — Local Windows Security Event Log Ingestion
 """
 
-from unittest.mock import MagicMock, patch
 import warnings
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from ai.collection.live_normalizer import normalize_live_xml_event
 from ai.collection.live_reader import LiveWindowsEventReader
 from ai.collection.schema import WindowsEventSchema
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sample Live Windows Security Event Log XML Payloads
@@ -294,8 +293,12 @@ class TestLiveWindowsEventReader:
         reader.last_record_id = 9000
 
         # Batch: 9001 (valid), invalid XML (9999), 9002 (valid)
-        valid_9001 = SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", "<EventRecordID>9001</EventRecordID>")
-        valid_9002 = SAMPLE_PROCESS_CREATE_XML.replace("<EventRecordID>98766</EventRecordID>", "<EventRecordID>9002</EventRecordID>")
+        valid_9001 = SAMPLE_FAILED_LOGON_XML.replace(
+            "<EventRecordID>98765</EventRecordID>", "<EventRecordID>9001</EventRecordID>"
+        )
+        valid_9002 = SAMPLE_PROCESS_CREATE_XML.replace(
+            "<EventRecordID>98766</EventRecordID>", "<EventRecordID>9002</EventRecordID>"
+        )
 
         reader._query_windows_security_log = MagicMock(return_value=[valid_9001, SAMPLE_INVALID_XML, valid_9002])
         events = reader.read_new_events()
@@ -313,7 +316,9 @@ class TestLiveWindowsEventReader:
 
         # Construct raw wevtutil output in descending order: 105, 104, 103, 102, 101
         xml_chunks = [
-            SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>")
+            SAMPLE_FAILED_LOGON_XML.replace(
+                "<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>"
+            )
             for rid in (105, 104, 103, 102, 101)
         ]
         raw_stdout = "\n".join(xml_chunks)
@@ -337,7 +342,9 @@ class TestLiveWindowsEventReader:
 
         # Construct raw payload containing records 101 through 105 in ascending order
         xml_chunks = [
-            SAMPLE_FAILED_LOGON_XML.replace("<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>")
+            SAMPLE_FAILED_LOGON_XML.replace(
+                "<EventRecordID>98765</EventRecordID>", f"<EventRecordID>{rid}</EventRecordID>"
+            )
             for rid in (101, 102, 103, 104, 105)
         ]
 
@@ -376,7 +383,8 @@ class TestLiveWindowsEventReader:
         """10. Package import of live collection components produces zero RuntimeWarning."""
         with warnings.catch_warnings(record=True) as recorded:
             warnings.simplefilter("always")
-            from ai.collection import LiveWindowsEventReader as Reader, normalize_live_xml_event as normalizer
+            from ai.collection import LiveWindowsEventReader as Reader
+            from ai.collection import normalize_live_xml_event as normalizer
 
             r = Reader()
             assert r.channel == "Security"

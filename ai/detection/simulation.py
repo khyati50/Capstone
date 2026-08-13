@@ -11,8 +11,8 @@ Generates 7 synthetic security event sequences for interactive SOC testing:
 8. RESET_STATE
 """
 
-from typing import Dict, Any, List
 import time
+from typing import Any, Dict, List
 
 
 class SimulationEngine:

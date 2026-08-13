@@ -2,8 +2,9 @@
 
 import pytest
 from fastapi.testclient import TestClient
-from ai.server import app
+
 from ai.prediction.service import PredictionService
+from ai.server import app
 
 client = TestClient(app)
 

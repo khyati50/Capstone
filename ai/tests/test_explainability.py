@@ -1,8 +1,9 @@
 """Unit Tests for Phase 9 & 10 Explainability & Security Intelligence Layer."""
 
 import pytest
-from ai.explainability.shap_explainer import ShapExplainer
+
 from ai.explainability.security_intel import SecurityIntelligenceLayer
+from ai.explainability.shap_explainer import ShapExplainer
 
 
 def test_shap_explainer_local_attribution():

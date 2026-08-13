@@ -6,16 +6,17 @@ every processing layer to final intelligence package output:
 """
 
 import pytest
-from ai.prediction.service import PredictionService
-from ai.explainability.shap_explainer import ShapExplainer
-from ai.explainability.security_intel import SecurityIntelligenceLayer
-from ai.detection.rule_engine import RuleEngine
-from ai.detection.hybrid_engine import HybridDetectionEngine
-from ai.detection.simulation import SimulationEngine
+
 from ai.correlation.event_correlator import EventCorrelator
-from ai.correlation.timeline_builder import TimelineBuilder
 from ai.correlation.risk_engine import DynamicRiskEngine
+from ai.correlation.timeline_builder import TimelineBuilder
+from ai.detection.hybrid_engine import HybridDetectionEngine
+from ai.detection.rule_engine import RuleEngine
+from ai.detection.simulation import SimulationEngine
+from ai.explainability.security_intel import SecurityIntelligenceLayer
+from ai.explainability.shap_explainer import ShapExplainer
 from ai.mitre.mapper import MitreMapper
+from ai.prediction.service import PredictionService
 
 # ──────────────────────────────────────────────
 # Full Pipeline Integration Tests

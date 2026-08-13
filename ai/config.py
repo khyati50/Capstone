@@ -20,6 +20,10 @@ NUMERICAL_FEATURES = [
     "privilege_escalation_flag",
     "unusual_process_parent_ratio",
     "session_duration",
+    "commandline_entropy",
+    "event_frequency_1h",
+    "is_known_attack_eventid",
+    "process_name_entropy",
 ]
 
 CATEGORICAL_FEATURES = [

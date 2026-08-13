@@ -14,12 +14,12 @@ Phase 2.3 — Windows Real-Time Feature Extraction Bridge
 """
 
 import time
+
 import pytest
 
 from ai.collection.schema import WindowsEventSchema
 from ai.config import ALL_FEATURE_KEYS
 from ai.realtime.feature_bridge import RealTimeFeatureBridge, RealTimeFeatureVector
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Fixtures
