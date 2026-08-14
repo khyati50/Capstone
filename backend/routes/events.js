@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { sendPredictionRequest } = require('../services/predictionProxy');
-const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate } = require('../services/socketService');
-const { saveProcessedPipelineResult, getEvents, getRiskMetrics, getMitreMatrix, getTimeline } = require('../services/dbService');
+const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry } = require('../services/socketService');
+const { saveProcessedPipelineResult, getEvents, getRiskMetrics, getMitreMatrix, getTimeline, getTelemetry } = require('../services/dbService');
 
 // POST /api/events/pipeline-result - Ingest pre-processed live pipeline result from Python consumer
 router.post('/pipeline-result', async (req, res) => {
@@ -19,10 +19,12 @@ router.post('/pipeline-result', async (req, res) => {
     const currentMitre = await getMitreMatrix();
     const latestIncId = alertEntry ? alertEntry.incident_id : null;
     const currentTimeline = await getTimeline(latestIncId);
+    const currentTelemetry = getTelemetry();
 
     broadcastRiskUpdate(currentRisk);
     broadcastMitreUpdate(currentMitre.mapped_techniques);
     broadcastTimelineUpdate(currentTimeline);
+    broadcastTelemetry(currentTelemetry);
 
     res.json({
       message: 'Live pipeline result persisted and broadcasted successfully',
@@ -61,7 +63,8 @@ router.post('/', async (req, res) => {
 
 // GET /api/events - Retrieve paginated events
 router.get('/', async (req, res) => {
-  const data = await getEvents();
+  const { page, limit } = req.query;
+  const data = await getEvents(page, limit);
   res.json(data);
 });
 

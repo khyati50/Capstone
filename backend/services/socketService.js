@@ -15,6 +15,13 @@ function initSocket(serverInstance) {
 
   io.on('connection', (socket) => {
     console.log(`[Socket.IO] New Dashboard Analyst Connected: ${socket.id}`);
+    try {
+      const { getTelemetry } = require('./dbService');
+      socket.emit('telemetry_update', getTelemetry());
+    } catch (e) {
+      // safe fallback
+    }
+
     socket.on('disconnect', () => {
       console.log(`[Socket.IO] Analyst Disconnected: ${socket.id}`);
     });
@@ -47,6 +54,12 @@ function broadcastMitreUpdate(mitreData) {
   }
 }
 
+function broadcastTelemetry(telemetryData) {
+  if (io) {
+    io.emit('telemetry_update', telemetryData);
+  }
+}
+
 function broadcastResetState() {
   if (io) {
     io.emit('reset_state');
@@ -59,6 +72,6 @@ module.exports = {
   broadcastRiskUpdate,
   broadcastTimelineUpdate,
   broadcastMitreUpdate,
+  broadcastTelemetry,
   broadcastResetState
 };
-

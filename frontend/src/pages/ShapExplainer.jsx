@@ -1,5 +1,5 @@
 import React from 'react';
-import { Cpu, HelpCircle, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { Cpu, HelpCircle, ShieldCheck, CheckCircle2, Activity, Link2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function ShapExplainer({ selectedAlert }) {
@@ -19,13 +19,18 @@ export default function ShapExplainer({ selectedAlert }) {
       '1. Immediately lock user account administrator.',
       '2. Inspect active IP address 192.168.1.105.',
       '3. Enforce multi-factor authentication reset.'
-    ]
+    ],
+    incident_id: 'INC-7532CA60',
+    chain_length: 2,
+    is_multi_stage: true
   };
 
   const chartData = Object.entries(alert.shap_values || {}).map(([key, val]) => ({
     feature: key,
     weight: val,
   }));
+
+  const isoScore = alert.isolation_forest_score ?? alert.anomaly_score ?? alert.evidence_package?.isolation_forest_score ?? alert.evidence_package?.anomaly_score ?? null;
 
   return (
     <div className="space-y-6">
@@ -63,7 +68,15 @@ export default function ShapExplainer({ selectedAlert }) {
         {/* Security Intelligence Panel (Primary Novelty) */}
         <div className="glass-panel p-5 rounded-xl border border-blue-500/30 space-y-4">
           <div>
-            <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-1">Security Intelligence Synthesis</span>
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block mb-1">Security Intelligence Synthesis</span>
+              {alert.is_multi_stage && (
+                <span className="px-2 py-0.5 rounded bg-orange-500/20 text-orange-400 border border-orange-500/30 text-[10px] font-mono font-bold uppercase flex items-center space-x-1">
+                  <Link2 className="w-2.5 h-2.5" />
+                  <span>Multi-Stage Incident</span>
+                </span>
+              )}
+            </div>
             <h4 className="text-sm font-bold text-white">{alert.threat_type}</h4>
             <p className="text-xs text-gray-300 mt-2 bg-blue-950/30 p-3 rounded-lg border border-blue-500/20 leading-relaxed">
               "{alert.explanation}"
@@ -80,6 +93,29 @@ export default function ShapExplainer({ selectedAlert }) {
                 </li>
               ))}
             </ul>
+          </div>
+
+          {/* Incident ID & Chain Length (Phase 13C) */}
+          <div className="pt-3 border-t border-gray-800 flex items-center justify-between text-xs font-mono">
+            <span className="text-gray-400">Incident Context:</span>
+            <div className="flex items-center space-x-2">
+              <span className="text-amber-400 font-semibold">{alert.incident_id || 'N/A'}</span>
+              <span className="text-gray-600">|</span>
+              <span className="text-blue-300">Chain Length: {alert.chain_length ?? 1}</span>
+            </div>
+          </div>
+
+          {/* PHASE 13B: Isolation Forest Anomaly Score Display */}
+          <div className="pt-2 border-t border-gray-800/60 flex items-center justify-between text-xs font-mono">
+            <span className="text-gray-400 flex items-center space-x-1.5">
+              <Activity className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Isolation Forest Anomaly Score:</span>
+            </span>
+            <span className="text-amber-400 font-semibold">
+              {isoScore !== null && isoScore !== undefined
+                ? (typeof isoScore === 'number' ? isoScore.toFixed(4) : isoScore)
+                : 'Not available'}
+            </span>
           </div>
         </div>
       </div>

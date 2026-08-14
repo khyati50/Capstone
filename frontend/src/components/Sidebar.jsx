@@ -7,13 +7,15 @@ import {
   Cpu, 
   Gauge, 
   Grid, 
-  PlaySquare 
+  PlaySquare, 
+  Database 
 } from 'lucide-react';
 
 export default function Sidebar({ activeTab, setActiveTab }) {
   const navItems = [
     { id: 'dashboard', label: 'SOC Overview', icon: LayoutDashboard },
     { id: 'alerts', label: 'Alert Center', icon: AlertTriangle },
+    { id: 'events', label: 'Raw Event Logs', icon: Database },
     { id: 'timeline', label: 'Attack Timeline', icon: GitCommit },
     { id: 'shap', label: 'SHAP Explainability', icon: Cpu },
     { id: 'risk', label: 'Risk Assessment', icon: Gauge },

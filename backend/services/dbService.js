@@ -6,6 +6,34 @@
 
 const pool = require('../config/db');
 
+let ingestionTimestamps = [];
+let droppedCount = 0;
+const MAX_BUFFER_CAPACITY = 10000;
+
+function recordIngestion(count = 1) {
+  const now = Date.now();
+  for (let i = 0; i < count; i++) {
+    ingestionTimestamps.push(now);
+  }
+  ingestionTimestamps = ingestionTimestamps.filter(t => now - t <= 5000);
+}
+
+function getTelemetry() {
+  const now = Date.now();
+  ingestionTimestamps = ingestionTimestamps.filter(t => now - t <= 5000);
+  const eps = ingestionTimestamps.length > 0 ? +(ingestionTimestamps.length / 5.0).toFixed(1) : 0.0;
+  const currentLogs = memoryStore.logs.length;
+  const utilization = +Math.min(100, ((currentLogs % MAX_BUFFER_CAPACITY) / MAX_BUFFER_CAPACITY) * 100).toFixed(1);
+  return {
+    events_per_second: eps,
+    buffer_utilization_percent: utilization,
+    buffer_current_size: currentLogs,
+    buffer_max_capacity: MAX_BUFFER_CAPACITY,
+    dropped_events_count: droppedCount,
+    timestamp: new Date().toISOString()
+  };
+}
+
 // In-Memory Fallback Stores
 const memoryStore = {
   logs: [],
@@ -34,6 +62,8 @@ function resetState() {
   memoryStore.logs = [];
   memoryStore.alerts = [];
   memoryStore.incidents = {};
+  ingestionTimestamps = [];
+  droppedCount = 0;
   memoryStore.risk = {
     overall_score: 0.0,
     overall_level: 'Low',
@@ -76,11 +106,16 @@ async function saveProcessedPipelineResult(pipelineResult) {
     event_id: rawEvt.EventID || 4624,
     hostname: hostname,
     username: username,
-    prediction: pipelineResult.prediction,
-    confidence: pipelineResult.confidence,
-    shap_values: pipelineResult.shap_values
+    process_name: rawEvt.ProcessName || rawEvt.NewProcessName || 'N/A',
+    command_line: rawEvt.CommandLine || 'N/A',
+    prediction: pipelineResult.prediction ?? (pipelineResult.severity === 'Low' || pipelineResult.severity === 'Benign' ? 0 : 1),
+    confidence: pipelineResult.confidence ?? 0.0,
+    severity: pipelineResult.severity || (pipelineResult.prediction === 1 ? 'High' : 'Benign'),
+    shap_values: pipelineResult.shap_values || {},
+    raw_event: rawEvt
   };
   memoryStore.logs.push(logEntry);
+  recordIngestion(1);
 
   let alertEntry = null;
 
@@ -100,11 +135,27 @@ async function saveProcessedPipelineResult(pipelineResult) {
       recommendations: pipelineResult.recommendations,
       timestamp: timestamp,
       incident_id: pipelineResult.incident_id || 'INC-LIVE-01',
+      chain_length: pipelineResult.chain_length ?? 1,
+      is_multi_stage: Boolean(pipelineResult.is_multi_stage),
       // Preserve explicit pipeline-provided risk score; do not inject hardcoded defaults here.
       risk_score: pipelineResult.risk_score ?? null,
       // Default to provided risk_level, otherwise mark as 'Fallback' or 'Unknown' depending on pipeline signal.
       risk_level: pipelineResult.risk_level ?? (pipelineResult.is_fallback ? 'Fallback' : 'Unknown'),
-      mitre_mapping: pipelineResult.mitre_mapping || []
+      mitre_mapping: pipelineResult.mitre_mapping || [],
+      isolation_forest_score: pipelineResult.isolation_forest_score ?? pipelineResult.anomaly_score ?? null,
+      isolation_forest_status: pipelineResult.isolation_forest_status ?? pipelineResult.anomaly_status ?? null,
+      evidence_package: pipelineResult.evidence_package || {
+        primary_indicators: pipelineResult.explanation ? [pipelineResult.explanation] : [],
+        raw_log_context: {
+          EventID: rawEvt.EventID || pipelineResult.event_id || 0,
+          Computer: hostname,
+          TargetUserName: username,
+          ProcessName: rawEvt.ProcessName || 'N/A',
+          CommandLine: rawEvt.CommandLine || 'N/A'
+        }
+      },
+      triggered_rules: pipelineResult.triggered_rules || [],
+      raw_event: rawEvt
     };
     memoryStore.alerts.unshift(alertEntry);
 
@@ -194,8 +245,22 @@ async function saveProcessedPipelineResult(pipelineResult) {
   return { logEntry, alertEntry };
 }
 
-async function getEvents() {
-  return { count: memoryStore.logs.length, events: memoryStore.logs.slice(-50) };
+async function getEvents(page = 1, limit = 10) {
+  const p = Math.max(1, parseInt(page, 10) || 1);
+  const l = Math.max(1, Math.min(100, parseInt(limit, 10) || 10));
+  const total = memoryStore.logs.length;
+  const totalPages = Math.ceil(total / l) || 1;
+  const reversedLogs = [...memoryStore.logs].reverse();
+  const startIdx = (p - 1) * l;
+  const events = reversedLogs.slice(startIdx, startIdx + l);
+  return { 
+    total_count: total, 
+    count: events.length, 
+    page: p, 
+    limit: l, 
+    total_pages: totalPages, 
+    events: events 
+  };
 }
 
 async function getAlerts() {
@@ -238,6 +303,7 @@ module.exports = {
   getTimeline,
   getRiskMetrics,
   getMitreMatrix,
+  getTelemetry,
   resetState,
   memoryStore
 };

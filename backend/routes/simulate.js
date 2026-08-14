@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { sendSimulationRequest, sendResetRequest } = require('../services/predictionProxy');
-const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastResetState } = require('../services/socketService');
-const { saveProcessedPipelineResult, resetState, getRiskMetrics, getMitreMatrix, getTimeline } = require('../services/dbService');
+const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry, broadcastResetState } = require('../services/socketService');
+const { saveProcessedPipelineResult, resetState, getRiskMetrics, getMitreMatrix, getTimeline, getTelemetry } = require('../services/dbService');
 
 // POST /api/simulate/scenario - Trigger attack scenario through full AI pipeline
 router.post('/scenario', async (req, res) => {
@@ -26,11 +26,12 @@ router.post('/scenario', async (req, res) => {
     const currentRisk = await getRiskMetrics();
     const currentMitre = await getMitreMatrix();
     const currentTimeline = await getTimeline(latestIncId);
+    const currentTelemetry = getTelemetry();
 
     broadcastRiskUpdate(currentRisk);
     broadcastMitreUpdate(currentMitre.mapped_techniques);
     broadcastTimelineUpdate(currentTimeline);
-
+    broadcastTelemetry(currentTelemetry);
 
     res.json({
       message: `Simulation scenario ${scenario_type} processed through full AI pipeline successfully.`,
@@ -39,7 +40,8 @@ router.post('/scenario', async (req, res) => {
       alerts: processedAlerts,
       risk: currentRisk,
       mitre: currentMitre,
-      timeline: currentTimeline
+      timeline: currentTimeline,
+      telemetry: currentTelemetry
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -52,6 +54,7 @@ router.post('/reset', async (req, res) => {
     await sendResetRequest();
     resetState();
     broadcastResetState();
+    broadcastTelemetry(getTelemetry());
     res.json({ message: 'Simulation state reset successfully across AI Engine, Backend DB, and WebSockets.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -59,5 +62,3 @@ router.post('/reset', async (req, res) => {
 });
 
 module.exports = router;
-
-
