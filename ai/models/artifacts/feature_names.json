@@ -2,11 +2,17 @@
   "failed_login_count_5m",
   "time_delta_prev_event",
   "is_powershell_executed",
+  "is_cmd_or_tool_executed",
   "privilege_escalation_flag",
   "unusual_process_parent_ratio",
   "session_duration",
   "commandline_entropy",
+  "process_name_entropy",
   "event_frequency_1h",
   "is_known_attack_eventid",
-  "process_name_entropy"
+  "commandline_length",
+  "suspicious_tool_count",
+  "path_depth",
+  "has_admin_keyword",
+  "num_digits_cmdline"
 ]

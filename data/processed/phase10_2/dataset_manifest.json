@@ -1,39 +1,42 @@
 {
   "phase": "10.2",
-  "description": "Unified Supervised Datasets with 10 Features",
+  "version": "v4_max_zero_leakage",
+  "description": "MAX Real Windows-APT 2025 dataset with 16 Pure Telemetry Features (Zero Leakage)",
+  "source": "Windows-APT 2025 combined.csv + log_to_scenario_mapping.csv",
   "features": [
     "failed_login_count_5m",
     "time_delta_prev_event",
     "is_powershell_executed",
+    "is_cmd_or_tool_executed",
     "privilege_escalation_flag",
     "unusual_process_parent_ratio",
     "session_duration",
     "commandline_entropy",
+    "process_name_entropy",
     "event_frequency_1h",
     "is_known_attack_eventid",
-    "process_name_entropy"
+    "commandline_length",
+    "suspicious_tool_count",
+    "path_depth",
+    "has_admin_keyword",
+    "num_digits_cmdline"
   ],
-  "n_features": 10,
+  "n_features": 16,
   "split_counts": {
     "train": {
-      "total": 29479,
-      "malicious": 6261,
-      "benign": 23218
+      "total": 21175,
+      "malicious": 17912,
+      "benign": 3263
     },
     "val": {
-      "total": 4438,
-      "malicious": 1444,
-      "benign": 2994
+      "total": 4537,
+      "malicious": 3838,
+      "benign": 699
     },
     "internal_test": {
-      "total": 13606,
-      "malicious": 1426,
-      "benign": 12180
-    },
-    "external_test_windows_apt": {
-      "total": 63619,
-      "malicious": 63619,
-      "benign": 0
+      "total": 4538,
+      "malicious": 3838,
+      "benign": 700
     }
   }
 }

@@ -1,28 +1,537 @@
 {
-  "phase": "11.1",
-  "winning_model": "XGBoost",
-  "best_seed": 42,
-  "n_features": 10,
+  "model_name": "XGBoost",
+  "selected_f1_score": 0.9679819316625213,
+  "best_threshold": 0.2006101906299591,
+  "trained_at": "2026-08-13T16:54:38.621668",
+  "feature_count": 16,
   "features": [
     "failed_login_count_5m",
     "time_delta_prev_event",
     "is_powershell_executed",
+    "is_cmd_or_tool_executed",
     "privilege_escalation_flag",
     "unusual_process_parent_ratio",
     "session_duration",
     "commandline_entropy",
+    "process_name_entropy",
     "event_frequency_1h",
     "is_known_attack_eventid",
-    "process_name_entropy"
+    "commandline_length",
+    "suspicious_tool_count",
+    "path_depth",
+    "has_admin_keyword",
+    "num_digits_cmdline"
   ],
-  "validation_accuracy_mean": 0.9997746732762506,
-  "validation_accuracy_std": 0.0,
-  "validation_f1_mean": 0.9996536196744025,
-  "validation_f1_std": 0.0,
-  "validation_roc_auc_mean": 1.0,
-  "validation_roc_auc_std": 0.0,
-  "validation_pr_auc_mean": 1.0,
-  "validation_pr_auc_std": 0.0,
-  "validation_fpr_mean": 0.0,
-  "validation_fpr_std": 0.0
+  "seeds_evaluated": [
+    42,
+    123,
+    456,
+    789,
+    2024
+  ],
+  "data_source": "data\\processed\\phase10_2",
+  "train_samples": 21175,
+  "val_samples": 4537,
+  "evaluation_summary": [
+    {
+      "model_name": "XGBoost",
+      "accuracy": 0.9156,
+      "precision": 0.9991,
+      "recall": 0.901,
+      "f1_score": 0.9475,
+      "roc_auc": 0.982,
+      "confusion_matrix": [
+        [
+          696,
+          3
+        ],
+        [
+          380,
+          3458
+        ]
+      ],
+      "inference_latency_ms": 0.0007,
+      "eval_sample_count": 4537,
+      "seed": 42,
+      "train_f1": 0.9488,
+      "opt_threshold": 0.1806,
+      "opt_val_f1": 0.9676,
+      "train_val_f1_gap": -0.0188
+    },
+    {
+      "model_name": "RandomForest",
+      "accuracy": 0.9171,
+      "precision": 0.9988,
+      "recall": 0.9031,
+      "f1_score": 0.9485,
+      "roc_auc": 0.9791,
+      "confusion_matrix": [
+        [
+          695,
+          4
+        ],
+        [
+          372,
+          3466
+        ]
+      ],
+      "inference_latency_ms": 0.0051,
+      "eval_sample_count": 4537,
+      "seed": 42,
+      "train_f1": 0.9499,
+      "opt_threshold": 0.1767,
+      "opt_val_f1": 0.9642,
+      "train_val_f1_gap": -0.0143
+    },
+    {
+      "model_name": "ExtraTrees",
+      "accuracy": 0.8918,
+      "precision": 0.9967,
+      "recall": 0.8749,
+      "f1_score": 0.9319,
+      "roc_auc": 0.9716,
+      "confusion_matrix": [
+        [
+          688,
+          11
+        ],
+        [
+          480,
+          3358
+        ]
+      ],
+      "inference_latency_ms": 0.0051,
+      "eval_sample_count": 4537,
+      "seed": 42,
+      "train_f1": 0.93,
+      "opt_threshold": 0.1591,
+      "opt_val_f1": 0.9572,
+      "train_val_f1_gap": -0.0272
+    },
+    {
+      "model_name": "DecisionTree",
+      "accuracy": 0.916,
+      "precision": 0.9983,
+      "recall": 0.9023,
+      "f1_score": 0.9479,
+      "roc_auc": 0.9703,
+      "confusion_matrix": [
+        [
+          693,
+          6
+        ],
+        [
+          375,
+          3463
+        ]
+      ],
+      "inference_latency_ms": 0.0002,
+      "eval_sample_count": 4537,
+      "seed": 42,
+      "train_f1": 0.9482,
+      "opt_threshold": 0.1659,
+      "opt_val_f1": 0.9556,
+      "train_val_f1_gap": -0.0074
+    },
+    {
+      "model_name": "XGBoost",
+      "accuracy": 0.9162,
+      "precision": 0.9991,
+      "recall": 0.9018,
+      "f1_score": 0.948,
+      "roc_auc": 0.9818,
+      "confusion_matrix": [
+        [
+          696,
+          3
+        ],
+        [
+          377,
+          3461
+        ]
+      ],
+      "inference_latency_ms": 0.0008,
+      "eval_sample_count": 4537,
+      "seed": 123,
+      "train_f1": 0.9492,
+      "opt_threshold": 0.184,
+      "opt_val_f1": 0.9674,
+      "train_val_f1_gap": -0.0182
+    },
+    {
+      "model_name": "RandomForest",
+      "accuracy": 0.918,
+      "precision": 0.9994,
+      "recall": 0.9036,
+      "f1_score": 0.9491,
+      "roc_auc": 0.9775,
+      "confusion_matrix": [
+        [
+          697,
+          2
+        ],
+        [
+          370,
+          3468
+        ]
+      ],
+      "inference_latency_ms": 0.0056,
+      "eval_sample_count": 4537,
+      "seed": 123,
+      "train_f1": 0.9497,
+      "opt_threshold": 0.1812,
+      "opt_val_f1": 0.9612,
+      "train_val_f1_gap": -0.0115
+    },
+    {
+      "model_name": "ExtraTrees",
+      "accuracy": 0.8988,
+      "precision": 0.9968,
+      "recall": 0.8833,
+      "f1_score": 0.9366,
+      "roc_auc": 0.9708,
+      "confusion_matrix": [
+        [
+          688,
+          11
+        ],
+        [
+          448,
+          3390
+        ]
+      ],
+      "inference_latency_ms": 0.005,
+      "eval_sample_count": 4537,
+      "seed": 123,
+      "train_f1": 0.9342,
+      "opt_threshold": 0.1543,
+      "opt_val_f1": 0.9568,
+      "train_val_f1_gap": -0.0226
+    },
+    {
+      "model_name": "DecisionTree",
+      "accuracy": 0.916,
+      "precision": 0.9983,
+      "recall": 0.9023,
+      "f1_score": 0.9479,
+      "roc_auc": 0.9703,
+      "confusion_matrix": [
+        [
+          693,
+          6
+        ],
+        [
+          375,
+          3463
+        ]
+      ],
+      "inference_latency_ms": 0.0002,
+      "eval_sample_count": 4537,
+      "seed": 123,
+      "train_f1": 0.9482,
+      "opt_threshold": 0.1659,
+      "opt_val_f1": 0.9556,
+      "train_val_f1_gap": -0.0074
+    },
+    {
+      "model_name": "XGBoost",
+      "accuracy": 0.9165,
+      "precision": 0.9991,
+      "recall": 0.902,
+      "f1_score": 0.9481,
+      "roc_auc": 0.982,
+      "confusion_matrix": [
+        [
+          696,
+          3
+        ],
+        [
+          376,
+          3462
+        ]
+      ],
+      "inference_latency_ms": 0.0008,
+      "eval_sample_count": 4537,
+      "seed": 456,
+      "train_f1": 0.9492,
+      "opt_threshold": 0.1821,
+      "opt_val_f1": 0.9669,
+      "train_val_f1_gap": -0.0177
+    },
+    {
+      "model_name": "RandomForest",
+      "accuracy": 0.9178,
+      "precision": 0.9988,
+      "recall": 0.9039,
+      "f1_score": 0.949,
+      "roc_auc": 0.9781,
+      "confusion_matrix": [
+        [
+          695,
+          4
+        ],
+        [
+          369,
+          3469
+        ]
+      ],
+      "inference_latency_ms": 0.0057,
+      "eval_sample_count": 4537,
+      "seed": 456,
+      "train_f1": 0.9498,
+      "opt_threshold": 0.1915,
+      "opt_val_f1": 0.9616,
+      "train_val_f1_gap": -0.0118
+    },
+    {
+      "model_name": "ExtraTrees",
+      "accuracy": 0.898,
+      "precision": 0.9968,
+      "recall": 0.8822,
+      "f1_score": 0.936,
+      "roc_auc": 0.9715,
+      "confusion_matrix": [
+        [
+          688,
+          11
+        ],
+        [
+          452,
+          3386
+        ]
+      ],
+      "inference_latency_ms": 0.0053,
+      "eval_sample_count": 4537,
+      "seed": 456,
+      "train_f1": 0.9333,
+      "opt_threshold": 0.1622,
+      "opt_val_f1": 0.9574,
+      "train_val_f1_gap": -0.0241
+    },
+    {
+      "model_name": "DecisionTree",
+      "accuracy": 0.916,
+      "precision": 0.9983,
+      "recall": 0.9023,
+      "f1_score": 0.9479,
+      "roc_auc": 0.9703,
+      "confusion_matrix": [
+        [
+          693,
+          6
+        ],
+        [
+          375,
+          3463
+        ]
+      ],
+      "inference_latency_ms": 0.0002,
+      "eval_sample_count": 4537,
+      "seed": 456,
+      "train_f1": 0.9482,
+      "opt_threshold": 0.1659,
+      "opt_val_f1": 0.9556,
+      "train_val_f1_gap": -0.0074
+    },
+    {
+      "model_name": "XGBoost",
+      "accuracy": 0.9165,
+      "precision": 0.9994,
+      "recall": 0.9018,
+      "f1_score": 0.9481,
+      "roc_auc": 0.9822,
+      "confusion_matrix": [
+        [
+          697,
+          2
+        ],
+        [
+          377,
+          3461
+        ]
+      ],
+      "inference_latency_ms": 0.001,
+      "eval_sample_count": 4537,
+      "seed": 789,
+      "train_f1": 0.9494,
+      "opt_threshold": 0.1835,
+      "opt_val_f1": 0.9675,
+      "train_val_f1_gap": -0.018
+    },
+    {
+      "model_name": "RandomForest",
+      "accuracy": 0.9182,
+      "precision": 0.9988,
+      "recall": 0.9044,
+      "f1_score": 0.9493,
+      "roc_auc": 0.9774,
+      "confusion_matrix": [
+        [
+          695,
+          4
+        ],
+        [
+          367,
+          3471
+        ]
+      ],
+      "inference_latency_ms": 0.0054,
+      "eval_sample_count": 4537,
+      "seed": 789,
+      "train_f1": 0.9499,
+      "opt_threshold": 0.1896,
+      "opt_val_f1": 0.9621,
+      "train_val_f1_gap": -0.0122
+    },
+    {
+      "model_name": "ExtraTrees",
+      "accuracy": 0.8896,
+      "precision": 0.9967,
+      "recall": 0.8723,
+      "f1_score": 0.9304,
+      "roc_auc": 0.9713,
+      "confusion_matrix": [
+        [
+          688,
+          11
+        ],
+        [
+          490,
+          3348
+        ]
+      ],
+      "inference_latency_ms": 0.0049,
+      "eval_sample_count": 4537,
+      "seed": 789,
+      "train_f1": 0.9287,
+      "opt_threshold": 0.1603,
+      "opt_val_f1": 0.9572,
+      "train_val_f1_gap": -0.0285
+    },
+    {
+      "model_name": "DecisionTree",
+      "accuracy": 0.916,
+      "precision": 0.9983,
+      "recall": 0.9023,
+      "f1_score": 0.9479,
+      "roc_auc": 0.9703,
+      "confusion_matrix": [
+        [
+          693,
+          6
+        ],
+        [
+          375,
+          3463
+        ]
+      ],
+      "inference_latency_ms": 0.0001,
+      "eval_sample_count": 4537,
+      "seed": 789,
+      "train_f1": 0.9482,
+      "opt_threshold": 0.1659,
+      "opt_val_f1": 0.9556,
+      "train_val_f1_gap": -0.0074
+    },
+    {
+      "model_name": "XGBoost",
+      "accuracy": 0.9156,
+      "precision": 0.9991,
+      "recall": 0.901,
+      "f1_score": 0.9475,
+      "roc_auc": 0.9824,
+      "confusion_matrix": [
+        [
+          696,
+          3
+        ],
+        [
+          380,
+          3458
+        ]
+      ],
+      "inference_latency_ms": 0.001,
+      "eval_sample_count": 4537,
+      "seed": 2024,
+      "train_f1": 0.9487,
+      "opt_threshold": 0.2006,
+      "opt_val_f1": 0.968,
+      "train_val_f1_gap": -0.0193
+    },
+    {
+      "model_name": "RandomForest",
+      "accuracy": 0.9169,
+      "precision": 0.9988,
+      "recall": 0.9028,
+      "f1_score": 0.9484,
+      "roc_auc": 0.9793,
+      "confusion_matrix": [
+        [
+          695,
+          4
+        ],
+        [
+          373,
+          3465
+        ]
+      ],
+      "inference_latency_ms": 0.0053,
+      "eval_sample_count": 4537,
+      "seed": 2024,
+      "train_f1": 0.9496,
+      "opt_threshold": 0.1756,
+      "opt_val_f1": 0.9653,
+      "train_val_f1_gap": -0.0157
+    },
+    {
+      "model_name": "ExtraTrees",
+      "accuracy": 0.898,
+      "precision": 0.9968,
+      "recall": 0.8822,
+      "f1_score": 0.936,
+      "roc_auc": 0.9713,
+      "confusion_matrix": [
+        [
+          688,
+          11
+        ],
+        [
+          452,
+          3386
+        ]
+      ],
+      "inference_latency_ms": 0.0052,
+      "eval_sample_count": 4537,
+      "seed": 2024,
+      "train_f1": 0.9334,
+      "opt_threshold": 0.1677,
+      "opt_val_f1": 0.9568,
+      "train_val_f1_gap": -0.0234
+    },
+    {
+      "model_name": "DecisionTree",
+      "accuracy": 0.916,
+      "precision": 0.9983,
+      "recall": 0.9023,
+      "f1_score": 0.9479,
+      "roc_auc": 0.9703,
+      "confusion_matrix": [
+        [
+          693,
+          6
+        ],
+        [
+          375,
+          3463
+        ]
+      ],
+      "inference_latency_ms": 0.0003,
+      "eval_sample_count": 4537,
+      "seed": 2024,
+      "train_f1": 0.9482,
+      "opt_threshold": 0.1659,
+      "opt_val_f1": 0.9556,
+      "train_val_f1_gap": -0.0074
+    }
+  ]
 }

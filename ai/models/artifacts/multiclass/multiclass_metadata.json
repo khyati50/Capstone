@@ -1,0 +1,39 @@
+{
+  "model": "XGBoost Multi-Class Threat Actor Classifier",
+  "classes": [
+    "APT3",
+    "APT41",
+    "BRONZE BUTLER",
+    "Chimera",
+    "Cinnamon Tempest",
+    "GALLIUM",
+    "Mustang Panda",
+    "Rocke",
+    "Threat Group-3390",
+    "Unknown",
+    "Volt Typhoon",
+    "menuPass"
+  ],
+  "num_classes": 12,
+  "test_accuracy": 0.728,
+  "test_f1_macro": 0.3918,
+  "test_f1_weighted": 0.7143,
+  "features": [
+    "failed_login_count_5m",
+    "time_delta_prev_event",
+    "is_powershell_executed",
+    "is_cmd_or_tool_executed",
+    "privilege_escalation_flag",
+    "unusual_process_parent_ratio",
+    "session_duration",
+    "commandline_entropy",
+    "process_name_entropy",
+    "event_frequency_1h",
+    "is_known_attack_eventid",
+    "commandline_length",
+    "suspicious_tool_count",
+    "path_depth",
+    "has_admin_keyword",
+    "num_digits_cmdline"
+  ]
+}

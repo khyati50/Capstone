@@ -82,11 +82,33 @@ def train_candidate_models(
     if X_train.empty or X_val.empty:
         return {"error": "Empty training or validation dataset"}
 
-    # Define candidate models
+    # Define candidate models with strict anti-overfitting regularization
     candidates = {
-        "RandomForest": RandomForestClassifier(n_estimators=50, max_depth=10, random_state=RANDOM_STATE),
-        "XGBoost": XGBClassifier(n_estimators=50, max_depth=6, random_state=RANDOM_STATE, eval_metric="logloss"),
-        "DecisionTree": DecisionTreeClassifier(max_depth=8, random_state=RANDOM_STATE),
+        "RandomForest": RandomForestClassifier(
+            n_estimators=50,
+            max_depth=5,
+            min_samples_split=10,
+            min_samples_leaf=4,
+            max_features="sqrt",
+            random_state=RANDOM_STATE,
+        ),
+        "XGBoost": XGBClassifier(
+            n_estimators=50,
+            max_depth=4,
+            learning_rate=0.05,
+            subsample=0.8,
+            colsample_bytree=0.8,
+            reg_alpha=1.0,
+            reg_lambda=2.0,
+            random_state=RANDOM_STATE,
+            eval_metric="logloss",
+        ),
+        "DecisionTree": DecisionTreeClassifier(
+            max_depth=4,
+            min_samples_split=10,
+            min_samples_leaf=5,
+            random_state=RANDOM_STATE,
+        ),
     }
 
     results = {}

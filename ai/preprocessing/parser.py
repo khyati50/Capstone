@@ -40,7 +40,7 @@ def parse_scenario_json(json_path: Path) -> List[Dict[str, Any]]:
         return records
 
     try:
-        with open(json_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(json_path, "r", encoding="utf-8-sig", errors="ignore") as f:
             data = json.load(f)
             if isinstance(data, dict):
                 data = [data]
