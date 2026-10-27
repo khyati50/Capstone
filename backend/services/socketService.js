@@ -66,9 +66,16 @@ function broadcastResetState() {
   }
 }
 
+function broadcastLog(logData) {
+  if (io) {
+    io.emit('new_event_log', logData);
+  }
+}
+
 module.exports = {
   initSocket,
   broadcastAlert,
+  broadcastLog,
   broadcastRiskUpdate,
   broadcastTimelineUpdate,
   broadcastMitreUpdate,

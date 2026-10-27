@@ -83,11 +83,23 @@ function resetState() {
   memoryStore.mitre = [];
 }
 
+let dbCheckCached = null;
+let lastDbCheckTime = 0;
+const DB_CHECK_TTL_MS = 30000; // Cache DB status for 30s to avoid latency on failed handshakes
+
 async function checkDbConnection() {
+  const now = Date.now();
+  if (dbCheckCached !== null && (now - lastDbCheckTime < DB_CHECK_TTL_MS)) {
+    return dbCheckCached;
+  }
   try {
     const [rows] = await pool.query('SELECT 1');
+    dbCheckCached = true;
+    lastDbCheckTime = now;
     return true;
   } catch (err) {
+    dbCheckCached = false;
+    lastDbCheckTime = now;
     return false;
   }
 }
@@ -141,9 +153,10 @@ async function saveProcessedPipelineResult(pipelineResult) {
       risk_score: pipelineResult.risk_score ?? null,
       // Default to provided risk_level, otherwise mark as 'Fallback' or 'Unknown' depending on pipeline signal.
       risk_level: pipelineResult.risk_level ?? (pipelineResult.is_fallback ? 'Fallback' : 'Unknown'),
+      risk_breakdown: pipelineResult.risk_breakdown || null,
+      risk_sublines: pipelineResult.risk_sublines || null,
       mitre_mapping: pipelineResult.mitre_mapping || [],
-      isolation_forest_score: pipelineResult.isolation_forest_score ?? pipelineResult.anomaly_score ?? null,
-      isolation_forest_status: pipelineResult.isolation_forest_status ?? pipelineResult.anomaly_status ?? null,
+      alert_source: pipelineResult.alert_source || (pipelineResult.triggered_rules && pipelineResult.triggered_rules.length > 0 ? 'AI_AND_RULE_AGREEMENT' : 'AI_ANOMALY_ONLY'),
       evidence_package: pipelineResult.evidence_package || {
         primary_indicators: pipelineResult.explanation ? [pipelineResult.explanation] : [],
         raw_log_context: {

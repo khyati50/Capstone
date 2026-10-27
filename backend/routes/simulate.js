@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendSimulationRequest, sendResetRequest } = require('../services/predictionProxy');
-const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry, broadcastResetState } = require('../services/socketService');
+const { broadcastAlert, broadcastLog, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry, broadcastResetState } = require('../services/socketService');
 const { saveProcessedPipelineResult, resetState, getRiskMetrics, getMitreMatrix, getTimeline, getTelemetry } = require('../services/dbService');
 
 // POST /api/simulate/scenario - Trigger attack scenario through full AI pipeline
@@ -13,7 +13,10 @@ router.post('/scenario', async (req, res) => {
     const processedAlerts = [];
     if (simResult && simResult.pipeline_results) {
       for (const item of simResult.pipeline_results) {
-        const { alertEntry } = await saveProcessedPipelineResult(item);
+        const { logEntry, alertEntry } = await saveProcessedPipelineResult(item);
+        if (logEntry) {
+          broadcastLog(logEntry);
+        }
         if (alertEntry) {
           processedAlerts.push(alertEntry);
           broadcastAlert(alertEntry);

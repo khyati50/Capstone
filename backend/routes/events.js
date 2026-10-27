@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { sendPredictionRequest } = require('../services/predictionProxy');
-const { broadcastAlert, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry } = require('../services/socketService');
+const { broadcastAlert, broadcastLog, broadcastRiskUpdate, broadcastTimelineUpdate, broadcastMitreUpdate, broadcastTelemetry } = require('../services/socketService');
 const { saveProcessedPipelineResult, getEvents, getRiskMetrics, getMitreMatrix, getTimeline, getTelemetry } = require('../services/dbService');
 
 // POST /api/events/pipeline-result - Ingest pre-processed live pipeline result from Python consumer
@@ -9,6 +9,10 @@ router.post('/pipeline-result', async (req, res) => {
   try {
     const pipelineResult = req.body;
     const { logEntry, alertEntry } = await saveProcessedPipelineResult(pipelineResult);
+
+    if (logEntry) {
+      broadcastLog(logEntry);
+    }
 
     if (alertEntry) {
       broadcastAlert(alertEntry);
@@ -45,6 +49,10 @@ router.post('/', async (req, res) => {
 
     const { logEntry, alertEntry } = await saveProcessedPipelineResult(predictionResult);
 
+    if (logEntry) {
+      broadcastLog(logEntry);
+    }
+
     if (alertEntry) {
       broadcastAlert(alertEntry);
       if (predictionResult.risk_score) {
@@ -63,9 +71,13 @@ router.post('/', async (req, res) => {
 
 // GET /api/events - Retrieve paginated events
 router.get('/', async (req, res) => {
-  const { page, limit } = req.query;
-  const data = await getEvents(page, limit);
-  res.json(data);
+  try {
+    const { page, limit } = req.query;
+    const data = await getEvents(page, limit);
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message || 'Failed to retrieve event logs' });
+  }
 });
 
 module.exports = router;
