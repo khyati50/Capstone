@@ -192,7 +192,7 @@ class LocalSecurityLogMonitor:
             "total_polls": self.total_polls,
             "total_events_emitted": self.total_events_emitted,
             "last_poll_timestamp": self.last_poll_timestamp,
-            "last_error": self.last_error,
+            "last_error": self.last_error or reader_status.get("last_error"),
             "listener_count": self.listener_count(),
             "reader": reader_status,
         }

@@ -46,6 +46,7 @@ class LiveWindowsEventReader:
         self.last_read_timestamp: Optional[str] = None
         self.total_events_read: int = 0
         self.validation_failures: int = 0
+        self.last_error: Optional[str] = None
         self._is_windows: bool = platform.system() == "Windows"
 
     def is_available(self) -> bool:
@@ -136,6 +137,15 @@ class LiveWindowsEventReader:
         Returns:
             Dictionary with health, event counts, channel, and bookmark info.
         """
+        status = "fallback_disabled"
+        if self._is_windows:
+            if self.last_error and "Access is denied" in self.last_error:
+                status = "permission_denied_run_as_admin"
+            elif self.last_error:
+                status = "query_error"
+            else:
+                status = "active"
+
         return {
             "channel": self.channel,
             "is_windows": self._is_windows,
@@ -143,7 +153,8 @@ class LiveWindowsEventReader:
             "last_read_timestamp": self.last_read_timestamp,
             "total_events_read": self.total_events_read,
             "validation_failures": self.validation_failures,
-            "status": "active" if self._is_windows else "fallback_disabled",
+            "last_error": self.last_error,
+            "status": status,
         }
 
     # ──────────────────────────────────────────────────────────
@@ -179,16 +190,27 @@ class LiveWindowsEventReader:
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=5.0,
+                timeout=15.0,
                 startupinfo=startupinfo,
                 encoding="utf-8",
                 errors="ignore",
             )
 
             if result.returncode != 0:
-                logger.warning(f"wevtutil returned code {result.returncode}: {result.stderr.strip()}")
+                err_msg = result.stderr.strip()
+                if "Access is denied" in err_msg or result.returncode == 1:
+                    self.last_error = (
+                        "Access is denied. Administrator privileges are required to read the "
+                        "Windows Security event channel. Run terminal/service as Administrator."
+                    )
+                    logger.warning(self.last_error)
+                else:
+                    self.last_error = f"wevtutil returned code {result.returncode}: {err_msg}"
+                    logger.warning(self.last_error)
                 return []
 
+            # Success: clear last error
+            self.last_error = None
             events = self._split_xml_events(result.stdout)
             # When initial query uses /rd:true (descending), reverse so records process in ascending chronological order
             if self.last_record_id == 0:
@@ -196,13 +218,16 @@ class LiveWindowsEventReader:
 
             return events
         except subprocess.TimeoutExpired:
-            logger.error("Timeout querying Windows Security Event Log via wevtutil.")
+            self.last_error = "Timeout (>15s) querying Windows Event Log via wevtutil."
+            logger.error(self.last_error)
             return []
         except FileNotFoundError:
-            logger.warning("wevtutil.exe not found on system path.")
+            self.last_error = "wevtutil.exe not found on system path."
+            logger.warning(self.last_error)
             return []
         except Exception as exc:
-            logger.error(f"Error querying Windows Security Event Log: {exc}")
+            self.last_error = f"Error querying Windows Security Event Log: {exc}"
+            logger.error(self.last_error)
             return []
 
     def _split_xml_events(self, raw_stdout: str) -> List[str]:
