@@ -23,6 +23,7 @@ frontend/.env
 # Model Artifacts (Heavy Binaries)
 ai/models/artifacts/*.pkl
 ai/models/artifacts/seed_checkpoints/
+ai/models/artifacts_backup_*/
 
 # Raw Datasets & Large Processed Files
 dataset/
