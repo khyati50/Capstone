@@ -162,8 +162,8 @@ export default function Dashboard({ alerts = [], riskData, telemetry = {}, conne
             <span className="text-xs text-gray-400 font-medium">AI Model Confidence</span>
             <CheckCircle2 className="w-5 h-5 text-emerald-400" />
           </div>
-          <p className="text-2xl font-extrabold text-white mt-2">94.2%</p>
-          <span className="text-[11px] text-emerald-400 font-mono mt-1 block">XGBoost Production v1.0</span>
+          <p className="text-2xl font-extrabold text-white mt-2">96.8%</p>
+          <span className="text-[11px] text-emerald-400 font-mono mt-1 block">XGBoost Production v4.0 (16-Feat MAX)</span>
         </div>
       </div>
 

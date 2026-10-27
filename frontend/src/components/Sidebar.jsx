@@ -57,7 +57,7 @@ export default function Sidebar({ activeTab, setActiveTab }) {
       <div className="p-4 border-t border-[#1f2937]">
         <div className="glass-panel p-3 rounded-lg text-xs">
           <p className="text-gray-400 font-medium">Model Engine</p>
-          <p className="text-emerald-400 font-mono text-[11px] mt-0.5">● Active (XGBoost v1.0)</p>
+          <p className="text-emerald-400 font-mono text-[11px] mt-0.5">● Active (XGBoost v4.0)</p>
           <p className="text-gray-500 text-[10px] mt-1">WDAC Enforced Mode</p>
         </div>
       </div>

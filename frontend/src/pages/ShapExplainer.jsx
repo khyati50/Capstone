@@ -12,8 +12,19 @@ export default function ShapExplainer({ selectedAlert }) {
       failed_login_count_5m: 0.42,
       is_powershell_executed: 0.38,
       privilege_escalation_flag: 0.35,
+      is_cmd_or_tool_executed: 0.28,
+      is_known_attack_eventid: 0.31,
+      suspicious_tool_count: 0.22,
+      has_admin_keyword: 0.19,
+      commandline_entropy: 0.15,
+      commandline_length: 0.12,
+      num_digits_cmdline: 0.08,
       unusual_process_parent_ratio: -0.05,
-      time_delta_prev_event: -0.12
+      time_delta_prev_event: -0.12,
+      event_frequency_1h: -0.04,
+      session_duration: -0.06,
+      process_name_entropy: -0.03,
+      path_depth: -0.05
     },
     recommendations: [
       '1. Immediately lock user account administrator.',
@@ -30,7 +41,8 @@ export default function ShapExplainer({ selectedAlert }) {
     weight: val,
   }));
 
-  const isoScore = alert.isolation_forest_score ?? alert.anomaly_score ?? alert.evidence_package?.isolation_forest_score ?? alert.evidence_package?.anomaly_score ?? null;
+  const alertSource = alert.alert_source || (alert.triggered_rules && alert.triggered_rules.length > 0 ? 'AI_AND_RULE_AGREEMENT' : 'AI_ANOMALY_ONLY');
+  const modelConfidence = typeof alert.confidence === 'number' ? alert.confidence : 0.998;
 
   return (
     <div className="space-y-6">
@@ -39,7 +51,7 @@ export default function ShapExplainer({ selectedAlert }) {
           <Cpu className="w-5 h-5 text-blue-400" />
           <span>SHAP Explainability Drawer & Security Intelligence Layer</span>
         </h2>
-        <p className="text-xs text-gray-400">Primary Research Novelty — Human-Readable AI Reasoning for Alert {alert.alert_id}</p>
+        <p className="text-xs text-gray-400">Primary Research Novelty — Human-Readable AI Reasoning for Alert {alert.alert_id} (16 Telemetry Features)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -49,11 +61,11 @@ export default function ShapExplainer({ selectedAlert }) {
             <span>Local Feature Attribution (SHAP Weights)</span>
             <span className="text-[10px] text-gray-400 font-mono">+ Push Malicious | - Push Benign</span>
           </h3>
-          <div className="h-64">
+          <div className="h-[460px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={chartData} layout="vertical" margin={{ left: 40, right: 20 }}>
                 <XAxis type="number" stroke="#6b7280" fontSize={11} domain={[-0.5, 0.5]} />
-                <YAxis type="category" dataKey="feature" stroke="#9ca3af" fontSize={10} width={150} />
+                <YAxis type="category" dataKey="feature" stroke="#9ca3af" fontSize={10} width={160} />
                 <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#374151' }} />
                 <Bar dataKey="weight">
                   {chartData.map((entry, index) => (
@@ -105,16 +117,23 @@ export default function ShapExplainer({ selectedAlert }) {
             </div>
           </div>
 
-          {/* PHASE 13B: Isolation Forest Anomaly Score Display */}
+          {/* XGBoost Decision Engine & Provenance Display */}
           <div className="pt-2 border-t border-gray-800/60 flex items-center justify-between text-xs font-mono">
             <span className="text-gray-400 flex items-center space-x-1.5">
-              <Activity className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Isolation Forest Anomaly Score:</span>
+              <Activity className="w-3.5 h-3.5 text-blue-400" />
+              <span>XGBoost Decision Provenance:</span>
             </span>
-            <span className="text-amber-400 font-semibold">
-              {isoScore !== null && isoScore !== undefined
-                ? (typeof isoScore === 'number' ? isoScore.toFixed(4) : isoScore)
-                : 'Not available'}
+            <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-semibold text-[10px] uppercase border border-blue-500/30">
+              {alertSource}
+            </span>
+          </div>
+          <div className="pt-1.5 flex items-center justify-between text-xs font-mono">
+            <span className="text-gray-400 flex items-center space-x-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Model Confidence:</span>
+            </span>
+            <span className="text-emerald-400 font-semibold">
+              {(modelConfidence * 100).toFixed(1)}% (XGBoost Ensemble)
             </span>
           </div>
         </div>

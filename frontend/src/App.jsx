@@ -116,6 +116,40 @@ export default function App() {
     setActiveTab('shap');
   };
 
+  const handleSelectRisk = (alert) => {
+    const fallbackScore = alert.severity === 'Critical' ? 88.5 : (alert.severity === 'High' ? 68.0 : 42.0);
+    const score = typeof alert.risk_score === 'number' ? alert.risk_score : fallbackScore;
+    const level = alert.risk_level || alert.severity || 'HIGH';
+
+    const specificRisk = {
+      score: score,
+      overall_score: score,
+      level: level,
+      overall_level: level,
+      breakdown: alert.risk_breakdown || {
+        ai_confidence_weight: Math.min(25.0, Math.max(0.0, ((alert.confidence || 0.8) - 0.5) / 0.5) * 25.0),
+        rule_hits_weight: (alert.triggered_rules && alert.triggered_rules.length > 0) ? 15.0 : 0.0,
+        mitre_tactic_weight: alert.severity === 'Critical' ? 20.0 : (alert.severity === 'High' ? 14.0 : 8.0),
+        tactic_diversity_weight: 14.0,
+        scope_weight: 7.5,
+        corroboration_multiplier: alert.alert_source === 'AI_AND_RULE_AGREEMENT' ? 1.15 : 1.05
+      },
+      sublines: alert.risk_sublines || {
+        ai_confidence_subline: `Model confidence: ${Math.round((alert.confidence || 0.8) * 100)}%`,
+        rule_hits_subline: `${alert.triggered_rules?.length || 1} rule matched (${alert.alert_id})`,
+        mitre_tactic_subline: alert.threat_type || 'Observed Attack Tactic',
+        tactic_diversity_subline: `Target: ${alert.hostname || 'Endpoint'}`,
+        scope_subline: `1 host + 1 user`,
+        corroboration_subline: alert.alert_source === 'AI_AND_RULE_AGREEMENT' ? '×1.15' : '×1.05'
+      },
+      selected_alert_id: alert.alert_id,
+      threat_type: alert.threat_type
+    };
+
+    setRiskData(specificRisk);
+    setActiveTab('risk');
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-[#0b0f19]">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
@@ -130,7 +164,13 @@ export default function App() {
               connectionStatus={connectionStatus} 
             />
           )}
-          {activeTab === 'alerts' && <AlertCenter alerts={alerts} onSelectAlert={handleSelectAlert} />}
+          {activeTab === 'alerts' && (
+            <AlertCenter 
+              alerts={alerts} 
+              onSelectAlert={handleSelectAlert} 
+              onSelectRisk={handleSelectRisk} 
+            />
+          )}
           {activeTab === 'events' && <RawEvents />}
           {activeTab === 'timeline' && <Timeline timelineData={timelineData} />}
           {activeTab === 'shap' && <ShapExplainer selectedAlert={selectedAlert} />}

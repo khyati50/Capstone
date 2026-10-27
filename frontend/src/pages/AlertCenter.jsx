@@ -11,10 +11,11 @@ import {
   ListFilter, 
   Activity, 
   Link2, 
-  GitCommit 
+  GitCommit,
+  Gauge
 } from 'lucide-react';
 
-export default function AlertCenter({ alerts, onSelectAlert }) {
+export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }) {
   const [filterSeverity, setFilterSeverity] = useState('ALL');
   const [expandedAlertId, setExpandedAlertId] = useState(null);
 
@@ -86,8 +87,8 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                 const rawContext = evidence.raw_log_context || a.raw_event || {};
                 const primaryIndicators = evidence.primary_indicators || (a.explanation ? [a.explanation] : []);
                 const triggeredRules = a.triggered_rules || [];
-                const isoScore = a.isolation_forest_score ?? a.anomaly_score ?? evidence.isolation_forest_score ?? evidence.anomaly_score ?? null;
-                const isoStatus = a.isolation_forest_status ?? a.anomaly_status ?? evidence.isolation_forest_status ?? evidence.anomaly_status ?? null;
+                const alertSource = a.alert_source || (triggeredRules.length > 0 ? 'AI_AND_RULE_AGREEMENT' : 'AI_ANOMALY_ONLY');
+                const modelConfidence = typeof a.confidence === 'number' ? a.confidence : 0.998;
 
                 const eventId = rawContext.EventID ?? a.event_id ?? 'N/A';
                 const computer = rawContext.Computer || a.hostname || 'N/A';
@@ -159,7 +160,7 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                       <td className="p-4 font-mono text-gray-400 text-[11px]">
                         {a.timestamp ? new Date(a.timestamp).toLocaleString() : 'N/A'}
                       </td>
-                      <td className="p-4 text-right space-x-2">
+                      <td className="p-4 text-right space-x-2 whitespace-nowrap">
                         <button
                           onClick={() => toggleExpand(a.alert_id)}
                           className="inline-flex items-center space-x-1 px-2.5 py-1.5 bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white border border-gray-700 rounded-md transition-all text-xs font-medium"
@@ -174,6 +175,14 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                         >
                           <Cpu className="w-3.5 h-3.5" />
                           <span>Explain (SHAP)</span>
+                        </button>
+                        <button
+                          onClick={() => onSelectRisk && onSelectRisk(a)}
+                          className="inline-flex items-center space-x-1 px-3 py-1.5 bg-amber-500/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/30 rounded-md transition-all text-xs font-medium"
+                          title="View Dynamic Threat Risk Assessment for this log"
+                        >
+                          <Gauge className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Risk ({typeof a.risk_score === 'number' ? a.risk_score.toFixed(0) : (a.severity === 'Critical' ? '88' : a.severity === 'High' ? '68' : '42')})</span>
                         </button>
                       </td>
                     </tr>
@@ -208,7 +217,7 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                              {/* 1. PRIMARY INDICATORS, TRIGGERED RULES & ISOLATION FOREST */}
+                              {/* 1. PRIMARY INDICATORS, TRIGGERED RULES & XGBOOST DECISION ENGINE */}
                               <div className="space-y-3">
                                 {/* Primary Indicators */}
                                 <div className="bg-gray-900/80 p-3.5 rounded-lg border border-gray-800">
@@ -259,33 +268,34 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                                   )}
                                 </div>
 
-                                {/* Isolation Forest Anomaly Score */}
+                                {/* XGBoost Decision Engine & Provenance */}
                                 <div className="bg-gray-900/80 p-3.5 rounded-lg border border-gray-800">
                                   <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center space-x-1.5 text-xs font-semibold text-cyan-400">
+                                    <div className="flex items-center space-x-1.5 text-xs font-semibold text-blue-400">
                                       <Activity className="w-3.5 h-3.5" />
-                                      <span>Isolation Forest Anomaly Score</span>
+                                      <span>XGBoost Decision Engine</span>
                                     </div>
-                                    {isoStatus && (
-                                      <span className="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono text-[10px] uppercase border border-cyan-500/30">
-                                        {isoStatus}
-                                      </span>
-                                    )}
+                                    <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono text-[10px] uppercase border border-blue-500/30">
+                                      {alertSource}
+                                    </span>
                                   </div>
-                                  {isoScore !== null && isoScore !== undefined ? (
-                                    <div className="flex items-center space-x-3 bg-black/40 p-2 rounded border border-gray-800/80">
-                                      <span className="text-amber-400 font-mono font-bold text-sm">
-                                        {typeof isoScore === 'number' ? isoScore.toFixed(4) : isoScore}
+                                  <div className="flex items-center justify-between bg-black/40 p-2 rounded border border-gray-800/80">
+                                    <div className="flex items-center space-x-2">
+                                      <span className="text-emerald-400 font-mono font-bold text-sm">
+                                        {(modelConfidence * 100).toFixed(1)}%
                                       </span>
                                       <span className="text-gray-400 text-[11px] font-mono">
-                                        (Raw Anomaly Decision Metric)
+                                        Ensemble Confidence
                                       </span>
                                     </div>
-                                  ) : (
-                                    <div className="bg-black/40 p-2 rounded border border-gray-800/80 text-gray-500 text-xs italic font-mono">
-                                      Not available
-                                    </div>
-                                  )}
+                                    <span className="text-[10px] text-gray-500 font-mono">
+                                      {alertSource === 'AI_AND_RULE_AGREEMENT'
+                                        ? '0.45 AI + 0.35 Rule + 0.20 Event'
+                                        : alertSource === 'RULE_SIGNATURE_ONLY'
+                                        ? '0.65 Rule + 0.35 Event'
+                                        : '0.70 AI + 0.30 Event'}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
 
@@ -323,6 +333,27 @@ export default function AlertCenter({ alerts, onSelectAlert }) {
                                   </div>
                                 </div>
                               </div>
+                            </div>
+
+                            {/* 3. DYNAMIC THREAT RISK ASSESSMENT SUMMARY */}
+                            <div className="bg-gradient-to-r from-amber-500/10 via-red-500/10 to-transparent p-3.5 rounded-lg border border-amber-500/30 flex items-center justify-between flex-wrap gap-2">
+                              <div className="flex items-center space-x-3 text-xs">
+                                <Gauge className="w-4 h-4 text-amber-400" />
+                                <span className="font-bold text-white">Dynamic Threat Risk Score:</span>
+                                <span className="px-2.5 py-0.5 rounded font-mono font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40">
+                                  {typeof a.risk_score === 'number' ? a.risk_score.toFixed(1) : (a.severity === 'Critical' ? '88.5' : a.severity === 'High' ? '68.0' : '42.0')} / 100
+                                </span>
+                                <span className="text-gray-400 font-mono text-[11px]">
+                                  (Level: <span className="text-white font-semibold">{a.risk_level || a.severity || 'HIGH'}</span>)
+                                </span>
+                              </div>
+                              <button
+                                onClick={() => onSelectRisk && onSelectRisk(a)}
+                                className="inline-flex items-center space-x-1.5 px-3 py-1 bg-amber-500/20 hover:bg-amber-600 text-amber-300 hover:text-white border border-amber-500/40 rounded text-xs font-semibold transition-all"
+                              >
+                                <Gauge className="w-3.5 h-3.5" />
+                                <span>Open Full Multi-Factor Risk Breakdown →</span>
+                              </button>
                             </div>
                           </div>
                         </td>

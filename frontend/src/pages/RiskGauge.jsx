@@ -39,6 +39,28 @@ export default function RiskGauge({ riskData }) {
         <p className="text-xs text-gray-400">Multi-factor Dynamic Threat Scoring (0 - 100 Escalation Scale)</p>
       </div>
 
+      {data?.selected_alert_id && (
+        <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3.5 flex items-center justify-between text-xs flex-wrap gap-2">
+          <div className="flex items-center space-x-2.5">
+            <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono font-bold uppercase text-[10px] border border-amber-500/30">
+              Filtered by Alert
+            </span>
+            <span className="font-mono text-white font-bold">{data.selected_alert_id}</span>
+            <span className="text-gray-400">— {data.threat_type || 'Malicious Incident'}</span>
+          </div>
+          <button
+            onClick={() => {
+              apiClient.get('/risk')
+                .then(res => setData(res.data))
+                .catch(err => console.warn('Risk fetch fallback error:', err.message));
+            }}
+            className="text-[11px] font-mono px-3 py-1 bg-gray-800 hover:bg-gray-700 text-gray-200 rounded border border-gray-700 transition-colors"
+          >
+            ← Reset to Global Cumulative Risk
+          </button>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Dynamic Risk Gauge */}
         <div className="glass-panel p-6 rounded-xl flex flex-col items-center justify-center text-center border border-red-500/30">

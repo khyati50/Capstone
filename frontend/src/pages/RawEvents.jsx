@@ -4,6 +4,8 @@ import {
   RefreshCw, 
   ChevronLeft, 
   ChevronRight, 
+  ChevronDown,
+  ChevronUp,
   ShieldCheck, 
   AlertTriangle, 
   Terminal, 
@@ -13,7 +15,7 @@ import {
   Server, 
   User 
 } from 'lucide-react';
-import { apiClient } from '../api/client';
+import { socket, apiClient } from '../api/client';
 
 export default function RawEvents() {
   const [events, setEvents] = useState([]);
@@ -24,6 +26,14 @@ export default function RawEvents() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedRows, setExpandedRows] = useState({});
+
+  const toggleExpand = (rowKey) => {
+    setExpandedRows(prev => ({
+      ...prev,
+      [rowKey]: !prev[rowKey]
+    }));
+  };
 
   const fetchEvents = (page = currentPage, limit = pageSize) => {
     setLoading(true);
@@ -48,6 +58,34 @@ export default function RawEvents() {
 
   useEffect(() => {
     fetchEvents(currentPage, pageSize);
+
+    const handleNewLog = (newLog) => {
+      if (!newLog) return;
+      setEvents(prev => {
+        if (currentPage === 1) {
+          const exists = prev.some(e => e.id === newLog.id || (e.timestamp === newLog.timestamp && e.event_id === newLog.event_id && e.command_line === newLog.command_line));
+          if (exists) return prev;
+          return [newLog, ...prev].slice(0, pageSize);
+        }
+        return prev;
+      });
+      setTotalCount(prev => prev + 1);
+    };
+
+    const handleReset = () => {
+      setEvents([]);
+      setTotalCount(0);
+      setTotalPages(1);
+      setCurrentPage(1);
+    };
+
+    socket.on('new_event_log', handleNewLog);
+    socket.on('reset_state', handleReset);
+
+    return () => {
+      socket.off('new_event_log', handleNewLog);
+      socket.off('reset_state', handleReset);
+    };
   }, [currentPage, pageSize]);
 
   const handlePrevPage = () => {
@@ -82,6 +120,10 @@ export default function RawEvents() {
           <h2 className="text-lg font-bold text-white flex items-center space-x-2">
             <Database className="w-5 h-5 text-blue-400" />
             <span>Enterprise Raw Security Event Log Repository</span>
+            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse mr-1.5" />
+              LIVE STREAM
+            </span>
           </h2>
           <p className="text-xs text-gray-400">
             Real-time ingested Windows EVTX audit stream (Benign & Alert events)
@@ -170,6 +212,9 @@ export default function RawEvents() {
                   const username = e.username || (e.raw_event && (e.raw_event.TargetUserName || e.raw_event.SubjectUserName)) || 'N/A';
                   const processName = e.process_name || (e.raw_event && e.raw_event.ProcessName) || 'N/A';
                   const commandLine = e.command_line || (e.raw_event && e.raw_event.CommandLine) || 'N/A';
+                  const rowKey = e.id || `${currentPage}-${idx}`;
+                  const isExpanded = !!expandedRows[rowKey];
+                  const isLong = commandLine && commandLine !== 'N/A' && commandLine.length > 40;
 
                   return (
                     <tr key={e.id || idx} className="hover:bg-gray-800/40 transition-colors">
@@ -217,9 +262,45 @@ export default function RawEvents() {
                       <td className="p-4 font-mono text-gray-300 text-xs">
                         <span className="truncate block max-w-[140px]" title={processName}>{processName}</span>
                       </td>
-                      <td className="p-4 font-mono text-[11px] text-gray-400 max-w-xs">
-                        <div className="truncate bg-black/40 px-2 py-1 rounded border border-gray-800/80 text-emerald-400/90" title={commandLine}>
-                          {commandLine}
+                      <td className={`p-4 font-mono text-[11px] text-gray-400 transition-all ${isExpanded ? 'max-w-xl min-w-[320px]' : 'max-w-xs'}`}>
+                        <div 
+                          onClick={() => isLong && toggleExpand(rowKey)}
+                          className={`bg-black/40 px-2.5 py-1.5 rounded border border-gray-800/80 text-emerald-400/90 transition-all ${
+                            isLong ? 'cursor-pointer hover:border-emerald-500/40' : ''
+                          } ${
+                            isExpanded 
+                              ? 'whitespace-pre-wrap break-all max-h-64 overflow-y-auto' 
+                              : 'truncate'
+                          }`}
+                          title={isLong ? (isExpanded ? 'Click to collapse' : 'Click to expand full command') : commandLine}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className={isExpanded ? 'break-all select-text' : 'truncate'}>
+                              {commandLine}
+                            </span>
+                            {isLong && (
+                              <button
+                                type="button"
+                                onClick={(evt) => {
+                                  evt.stopPropagation();
+                                  toggleExpand(rowKey);
+                                }}
+                                className="inline-flex items-center space-x-0.5 text-[10px] text-emerald-400/80 hover:text-emerald-300 font-sans font-medium shrink-0 bg-emerald-500/10 hover:bg-emerald-500/20 px-1.5 py-0.5 rounded border border-emerald-500/20 transition-colors"
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <span>Less</span>
+                                    <ChevronUp className="w-3 h-3" />
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>More</span>
+                                    <ChevronDown className="w-3 h-3" />
+                                  </>
+                                )}
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </tr>
