@@ -12,10 +12,10 @@ import Simulation from './pages/Simulation';
 import { socket, apiClient } from './api/client';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedAlert, setSelectedAlert] = useState(null);
-  const [alerts, setAlerts] = useState([]);
-  const [riskData, setRiskData] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => new URLSearchParams(window.location.search).get('tab') || 'dashboard');
+  const [alerts, setAlerts] = useState(() => (typeof window !== 'undefined' && window.__INITIAL_ALERTS__) || []);
+  const [selectedAlert, setSelectedAlert] = useState(() => (typeof window !== 'undefined' && window.__INITIAL_ALERTS__ && window.__INITIAL_ALERTS__[0]) || null);
+  const [riskData, setRiskData] = useState(() => (typeof window !== 'undefined' && window.__INITIAL_RISK__) || null);
   const [timelineData, setTimelineData] = useState(null);
   const [mitreData, setMitreData] = useState([]);
   const [connectionStatus, setConnectionStatus] = useState(socket.connected ? 'CONNECTED' : 'CONNECTING');
@@ -30,7 +30,13 @@ export default function App() {
   useEffect(() => {
     // Initial fetch from backend REST APIs
     apiClient.get('/alerts')
-      .then(res => setAlerts(res.data.alerts || []))
+      .then(res => {
+        const list = res.data.alerts || [];
+        setAlerts(list);
+        if (list.length > 0) {
+          setSelectedAlert(prev => prev || list[0]);
+        }
+      })
       .catch(err => console.warn('Could not fetch alerts from backend:', err.message));
 
     apiClient.get('/risk')

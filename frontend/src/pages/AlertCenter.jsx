@@ -17,7 +17,14 @@ import {
 
 export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }) {
   const [filterSeverity, setFilterSeverity] = useState('ALL');
-  const [expandedAlertId, setExpandedAlertId] = useState(null);
+  const [expandedAlertId, setExpandedAlertId] = useState(() => {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      return (p.get('expand') === 'true' || p.get('expand') === '1') ? 'AUTO_FIRST' : null;
+    } catch {
+      return null;
+    }
+  });
 
   const filtered = alerts.filter(a => {
     if (filterSeverity === 'ALL') return true;
@@ -82,7 +89,7 @@ export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }
               </tr>
             ) : (
               filtered.map((a, idx) => {
-                const isExpanded = expandedAlertId === a.alert_id;
+                const isExpanded = expandedAlertId === a.alert_id || (expandedAlertId === 'AUTO_FIRST' && idx === 0);
                 const evidence = a.evidence_package || {};
                 const rawContext = evidence.raw_log_context || a.raw_event || {};
                 const primaryIndicators = evidence.primary_indicators || (a.explanation ? [a.explanation] : []);

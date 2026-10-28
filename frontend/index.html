@@ -10,6 +10,24 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[#0b0f19] text-gray-100 font-['Inter'] antialiased">
+    <script>
+      try {
+        var xhrA = new XMLHttpRequest();
+        xhrA.open('GET', '/api/alerts', false);
+        xhrA.send();
+        if (xhrA.status === 200) {
+          window.__INITIAL_ALERTS__ = JSON.parse(xhrA.responseText).alerts || [];
+        }
+        var xhrR = new XMLHttpRequest();
+        xhrR.open('GET', '/api/risk', false);
+        xhrR.send();
+        if (xhrR.status === 200) {
+          window.__INITIAL_RISK__ = JSON.parse(xhrR.responseText);
+        }
+      } catch (e) {
+        console.warn('Sync preload error:', e);
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
