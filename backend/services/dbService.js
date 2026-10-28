@@ -41,7 +41,7 @@ const memoryStore = {
   incidents: {},
   risk: {
     overall_score: 0.0,
-    overall_level: 'Low',
+    overall_level: 'Secure',
     active_incidents_count: 0,
     breakdown: {
       ai_confidence_weight: 0.0,
@@ -66,7 +66,7 @@ function resetState() {
   droppedCount = 0;
   memoryStore.risk = {
     overall_score: 0.0,
-    overall_level: 'Low',
+    overall_level: 'Secure',
     active_incidents_count: 0,
     breakdown: {
       ai_confidence_weight: 0.0,

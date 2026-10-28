@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Gauge, ShieldAlert, AlertOctagon } from 'lucide-react';
+import { Gauge } from 'lucide-react';
 import { apiClient } from '../api/client';
 
 export default function RiskGauge({ riskData }) {
@@ -16,7 +16,7 @@ export default function RiskGauge({ riskData }) {
   }, [riskData]);
 
   const score = data?.overall_score ?? data?.score ?? data?.risk_score ?? 0.0;
-  const level = data?.overall_level ?? data?.level ?? data?.risk_level ?? 'LOW';
+  const rawLevel = data?.overall_level ?? data?.level ?? data?.risk_level ?? 'Secure';
   const bd = data?.breakdown || data?.risk_breakdown || {};
   const sub = data?.sublines || {};
 
@@ -27,7 +27,57 @@ export default function RiskGauge({ riskData }) {
   const scope = bd.scope_weight ?? 0.0;
   const multiplier = bd.corroboration_multiplier ?? 1.0;
 
-  const isIdle = score === 0;
+  const isIdle = !score || score === 0;
+
+  // Dynamic visual styling depending on threat level
+  const getRiskTheme = (currentScore, levelStr) => {
+    if (!currentScore || currentScore === 0) {
+      return {
+        levelText: 'SECURE',
+        cardBorder: 'border-emerald-500/20',
+        circleBorder: 'border-8 border-gray-800',
+        badgeClass: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+        pulse: false
+      };
+    }
+    const upper = (levelStr || '').toUpperCase();
+    if (upper === 'CRITICAL' || currentScore >= 80) {
+      return {
+        levelText: 'CRITICAL',
+        cardBorder: 'border-red-500/40',
+        circleBorder: 'border-8 border-red-500/20 border-t-red-500 border-r-red-500',
+        badgeClass: 'bg-red-500/20 text-red-400 border border-red-500/40',
+        pulse: true
+      };
+    }
+    if (upper === 'HIGH' || currentScore >= 60) {
+      return {
+        levelText: 'HIGH',
+        cardBorder: 'border-orange-500/40',
+        circleBorder: 'border-8 border-orange-500/20 border-t-orange-500 border-r-orange-500',
+        badgeClass: 'bg-orange-500/20 text-orange-400 border border-orange-500/40',
+        pulse: true
+      };
+    }
+    if (upper === 'MEDIUM' || currentScore >= 30) {
+      return {
+        levelText: 'MEDIUM',
+        cardBorder: 'border-amber-500/40',
+        circleBorder: 'border-8 border-amber-500/20 border-t-amber-500 border-amber-500/30',
+        badgeClass: 'bg-amber-500/20 text-amber-300 border border-amber-500/40',
+        pulse: false
+      };
+    }
+    return {
+      levelText: 'LOW',
+      cardBorder: 'border-blue-500/30',
+      circleBorder: 'border-8 border-blue-500/20 border-t-blue-500',
+      badgeClass: 'bg-blue-500/20 text-blue-300 border border-blue-500/40',
+      pulse: false
+    };
+  };
+
+  const theme = getRiskTheme(score, rawLevel);
 
   return (
     <div className="space-y-6">
@@ -63,16 +113,16 @@ export default function RiskGauge({ riskData }) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Dynamic Risk Gauge */}
-        <div className="glass-panel p-6 rounded-xl flex flex-col items-center justify-center text-center border border-red-500/30">
+        <div className={`glass-panel p-6 rounded-xl flex flex-col items-center justify-center text-center border ${theme.cardBorder}`}>
           <span className="text-xs text-gray-400 font-mono">ENTERPRISE THREAT RATING</span>
           <div className="relative my-6 flex items-center justify-center">
-            <div className="w-44 h-44 rounded-full border-8 border-red-500/20 border-t-red-500 border-r-red-500 flex items-center justify-center animate-pulse">
+            <div className={`w-44 h-44 rounded-full ${theme.circleBorder} flex items-center justify-center ${theme.pulse ? 'animate-pulse' : ''}`}>
               <span className="text-4xl font-black text-white">{typeof score === 'number' ? score.toFixed(1) : score}</span>
             </div>
           </div>
           <div className="flex flex-col items-center space-y-2">
-            <span className="px-4 py-1.5 bg-red-500/20 text-red-400 border border-red-500/40 rounded-full text-xs font-bold font-mono uppercase">
-              LEVEL: {level}
+            <span className={`px-4 py-1.5 rounded-full text-xs font-bold font-mono uppercase ${theme.badgeClass}`}>
+              LEVEL: {theme.levelText}
             </span>
             {multiplier > 1.0 && (
               <span className="px-3 py-1 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full text-[11px] font-mono">
