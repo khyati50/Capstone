@@ -1,40 +1,37 @@
 import React from 'react';
-import { Cpu, HelpCircle, ShieldCheck, CheckCircle2, Activity, Link2 } from 'lucide-react';
+import { Cpu, ShieldCheck, CheckCircle2, Activity, Link2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 export default function ShapExplainer({ selectedAlert }) {
-  const alert = selectedAlert || {
-    alert_id: 'ALT-1001',
-    severity: 'Critical',
-    threat_type: 'Credential Access / Brute Force Attack',
-    explanation: 'High frequency of failed authentication attempts detected within 5 minutes.',
-    shap_values: {
-      failed_login_count_5m: 0.42,
-      is_powershell_executed: 0.38,
-      privilege_escalation_flag: 0.35,
-      is_cmd_or_tool_executed: 0.28,
-      is_known_attack_eventid: 0.31,
-      suspicious_tool_count: 0.22,
-      has_admin_keyword: 0.19,
-      commandline_entropy: 0.15,
-      commandline_length: 0.12,
-      num_digits_cmdline: 0.08,
-      unusual_process_parent_ratio: -0.05,
-      time_delta_prev_event: -0.12,
-      event_frequency_1h: -0.04,
-      session_duration: -0.06,
-      process_name_entropy: -0.03,
-      path_depth: -0.05
-    },
-    recommendations: [
-      '1. Immediately lock user account administrator.',
-      '2. Inspect active IP address 192.168.1.105.',
-      '3. Enforce multi-factor authentication reset.'
-    ],
-    incident_id: 'INC-7532CA60',
-    chain_length: 2,
-    is_multi_stage: true
-  };
+  if (!selectedAlert) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-lg font-bold text-white flex items-center space-x-2">
+            <Cpu className="w-5 h-5 text-blue-400" />
+            <span>SHAP Explainability Drawer & Security Intelligence Layer</span>
+          </h2>
+          <p className="text-xs text-gray-400">Primary Research Novelty — Human-Readable AI Reasoning for Windows Security Events</p>
+        </div>
+
+        <div className="glass-panel p-12 rounded-xl text-center flex flex-col items-center justify-center border border-gray-800/80 min-h-[460px]">
+          <div className="w-16 h-16 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-4">
+            <Cpu className="w-8 h-8 animate-pulse" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-200 mb-1">No Threat Alert Selected</h3>
+          <p className="text-xs text-gray-400 max-w-md leading-relaxed mb-4">
+            SHAP local feature attribution and security intelligence synthesize on-demand when a threat alert is generated or selected from the Alert Center.
+          </p>
+          <div className="flex items-center space-x-2 text-[11px] font-mono text-gray-400 bg-gray-900/60 px-3.5 py-1.5 rounded-full border border-gray-800">
+            <Activity className="w-3.5 h-3.5 text-blue-400" />
+            <span>Awaiting Threat Detection or Attack Simulation</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const alert = selectedAlert;
 
   const chartData = Object.entries(alert.shap_values || {}).map(([key, val]) => ({
     feature: key,
@@ -42,7 +39,7 @@ export default function ShapExplainer({ selectedAlert }) {
   }));
 
   const alertSource = alert.alert_source || (alert.triggered_rules && alert.triggered_rules.length > 0 ? 'AI_AND_RULE_AGREEMENT' : 'AI_ANOMALY_ONLY');
-  const modelConfidence = typeof alert.confidence === 'number' ? alert.confidence : 0.998;
+  const modelConfidence = typeof alert.confidence === 'number' ? alert.confidence : 0.968;
 
   return (
     <div className="space-y-6">
@@ -51,7 +48,7 @@ export default function ShapExplainer({ selectedAlert }) {
           <Cpu className="w-5 h-5 text-blue-400" />
           <span>SHAP Explainability Drawer & Security Intelligence Layer</span>
         </h2>
-        <p className="text-xs text-gray-400">Primary Research Novelty — Human-Readable AI Reasoning for Alert {alert.alert_id} (16 Telemetry Features)</p>
+        <p className="text-xs text-gray-400">Primary Research Novelty — Human-Readable AI Reasoning for Alert {alert.alert_id} ({chartData.length} Evaluated Features)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -62,18 +59,24 @@ export default function ShapExplainer({ selectedAlert }) {
             <span className="text-[10px] text-gray-400 font-mono">+ Push Malicious | - Push Benign</span>
           </h3>
           <div className="h-[460px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} layout="vertical" margin={{ left: 40, right: 20 }}>
-                <XAxis type="number" stroke="#6b7280" fontSize={11} domain={[-0.5, 0.5]} />
-                <YAxis type="category" dataKey="feature" stroke="#9ca3af" fontSize={10} width={160} />
-                <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#374151' }} />
-                <Bar dataKey="weight">
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.weight > 0 ? '#ef4444' : '#10b981'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} layout="vertical" margin={{ left: 40, right: 20 }}>
+                  <XAxis type="number" stroke="#6b7280" fontSize={11} domain={[-0.5, 0.5]} />
+                  <YAxis type="category" dataKey="feature" stroke="#9ca3af" fontSize={10} width={160} />
+                  <Tooltip contentStyle={{ backgroundColor: '#111827', borderColor: '#374151' }} />
+                  <Bar dataKey="weight">
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.weight > 0 ? '#ef4444' : '#10b981'} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-xs text-gray-500 font-mono">
+                No local SHAP attributions generated for this alert.
+              </div>
+            )}
           </div>
         </div>
 
