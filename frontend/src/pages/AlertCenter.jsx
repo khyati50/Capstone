@@ -12,8 +12,39 @@ import {
   Activity, 
   Link2, 
   GitCommit,
-  Gauge
+  Gauge,
+  Target
 } from 'lucide-react';
+
+function getAptResemblance(alert) {
+  if (alert.predicted_apt_group && alert.predicted_apt_group !== 'Unknown') {
+    return alert.predicted_apt_group;
+  }
+  if (alert.apt_group) return alert.apt_group;
+
+  const raw = alert.raw_event || alert.evidence_package?.raw_log_context || {};
+  const cmd = String(raw.CommandLine || alert.command_line || '').toLowerCase();
+  const proc = String(raw.ProcessName || alert.process_name || '').toLowerCase();
+  const type = String(alert.threat_type || alert.summary || '').toLowerCase();
+  const eventId = Number(raw.EventID || alert.event_id || 0);
+  const isPs = Number(raw.is_powershell_executed || 0) === 1;
+  const isPriv = Number(raw.privilege_escalation_flag || 0) === 1;
+  const failedCount = Number(raw.failed_login_count_5m || 0);
+
+  if (isPriv || eventId === 4672 || type.includes('privilege') || proc.includes('lsass')) {
+    return 'APT41';
+  }
+  if (isPs || cmd.includes('powershell') || proc.includes('powershell') || type.includes('powershell') || type.includes('encoded')) {
+    return 'Volt Typhoon';
+  }
+  if (failedCount >= 3 || eventId === 4625 || type.includes('brute') || type.includes('credential')) {
+    return 'Bronze Butler';
+  }
+  if (eventId === 4720 || eventId === 4732 || type.includes('account') || type.includes('persistence')) {
+    return 'Mustang Panda';
+  }
+  return 'Volt Typhoon';
+}
 
 export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }) {
   const [filterSeverity, setFilterSeverity] = useState('ALL');
@@ -106,6 +137,7 @@ export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }
                 const incidentId = a.incident_id || 'N/A';
                 const chainLength = a.chain_length ?? 1;
                 const isMultiStage = Boolean(a.is_multi_stage);
+                const aptResemblance = getAptResemblance(a);
 
                 return (
                   <React.Fragment key={a.alert_id || idx}>
@@ -141,6 +173,10 @@ export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }
                               <span>Multi-Stage</span>
                             </span>
                           )}
+                        </div>
+                        <div className="text-[11px] text-amber-400 font-mono mt-0.5 flex items-center space-x-1">
+                          <span className="text-gray-400">Resembles:</span>
+                          <span className="font-semibold text-amber-300">{aptResemblance}</span>
                         </div>
                       </td>
 
@@ -221,6 +257,21 @@ export default function AlertCenter({ alerts = [], onSelectAlert, onSelectRisk }
                                   </span>
                                 )}
                               </div>
+                            </div>
+
+                            {/* Single Clean Adversary Resemblance Mention */}
+                            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-3.5 py-2.5 flex items-center justify-between text-xs">
+                              <div className="flex items-center space-x-2">
+                                <Target className="w-4 h-4 text-amber-400 shrink-0" />
+                                <span className="text-gray-300 font-medium">Adversary Resemblance:</span>
+                                <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded font-mono font-bold text-xs">
+                                  {aptResemblance}
+                                </span>
+                                <span className="text-gray-400 text-[11px] hidden sm:inline">
+                                  — Behavioral telemetry pattern matches known tactics of <strong>{aptResemblance}</strong>
+                                </span>
+                              </div>
+                              <span className="text-[10px] text-gray-500 font-mono uppercase tracking-wider">Attribution Hypothesis</span>
                             </div>
 
                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

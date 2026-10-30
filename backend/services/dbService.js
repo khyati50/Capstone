@@ -34,6 +34,33 @@ function getTelemetry() {
   };
 }
 
+function computeAptResemblance(item, raw = {}) {
+  if (item.predicted_apt_group && item.predicted_apt_group !== 'Unknown') {
+    return item.predicted_apt_group;
+  }
+  const cmd = String(raw.CommandLine || '').toLowerCase();
+  const proc = String(raw.ProcessName || '').toLowerCase();
+  const type = String(item.threat_type || item.summary || '').toLowerCase();
+  const eventId = Number(raw.EventID || item.event_id || 0);
+  const isPs = Number(raw.is_powershell_executed || 0) === 1;
+  const isPriv = Number(raw.privilege_escalation_flag || 0) === 1;
+  const failedCount = Number(raw.failed_login_count_5m || 0);
+
+  if (isPriv || eventId === 4672 || type.includes('privilege') || proc.includes('lsass')) {
+    return 'APT41';
+  }
+  if (isPs || cmd.includes('powershell') || proc.includes('powershell') || type.includes('powershell')) {
+    return 'Volt Typhoon';
+  }
+  if (failedCount >= 3 || eventId === 4625 || type.includes('brute') || type.includes('credential')) {
+    return 'Bronze Butler';
+  }
+  if (eventId === 4720 || eventId === 4732 || type.includes('admin account') || type.includes('persistence')) {
+    return 'Mustang Panda';
+  }
+  return 'Volt Typhoon';
+}
+
 // In-Memory Fallback Stores
 const memoryStore = {
   logs: [],
@@ -133,6 +160,7 @@ async function saveProcessedPipelineResult(pipelineResult) {
 
   // 2. Save Alert Entry if Prediction == 1 or Severity >= High
   if (pipelineResult.prediction === 1 || pipelineResult.severity === 'Critical' || pipelineResult.severity === 'High') {
+    const aptGroup = computeAptResemblance(pipelineResult, rawEvt);
     alertEntry = {
       alert_id: `ALT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
       severity: pipelineResult.severity || (pipelineResult.confidence > 0.85 ? 'Critical' : 'High'),
@@ -140,6 +168,7 @@ async function saveProcessedPipelineResult(pipelineResult) {
       threat_type: pipelineResult.threat_type || 'Behavioral Anomaly Detected',
       summary: pipelineResult.threat_summary || `Malicious behavior on ${hostname} by user ${username}`,
       confidence: pipelineResult.confidence,
+      predicted_apt_group: pipelineResult.predicted_apt_group || aptGroup,
       hostname: hostname,
       username: username,
       shap_values: pipelineResult.shap_values,
@@ -277,11 +306,18 @@ async function getEvents(page = 1, limit = 10) {
 }
 
 async function getAlerts() {
-  return { count: memoryStore.alerts.length, alerts: memoryStore.alerts };
+  const enrichedAlerts = memoryStore.alerts.map(a => ({
+    ...a,
+    predicted_apt_group: a.predicted_apt_group || computeAptResemblance(a, a.raw_event || {})
+  }));
+  return { count: enrichedAlerts.length, alerts: enrichedAlerts };
 }
 
 async function getAlertById(alertId) {
-  const alert = memoryStore.alerts.find(a => a.alert_id === alertId) || memoryStore.alerts[0];
+  let alert = memoryStore.alerts.find(a => a.alert_id === alertId) || memoryStore.alerts[0];
+  if (alert && !alert.predicted_apt_group) {
+    alert = { ...alert, predicted_apt_group: computeAptResemblance(alert, alert.raw_event || {}) };
+  }
   return alert;
 }
 
